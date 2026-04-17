@@ -3,42 +3,42 @@
 <p align="center">
   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Icon.svg">
 </p>
-<h3 align="center">CspDiscordRpcGd</h1>
+<h3 align="center">CspDiscordRpcGd</h3>
 <h4 align="center">
-  A Discord Rich Presence client for CLIP STUDIO PAINT.
+  CLIP STUDIO PAINT 用の Discord Rich Presence クライアントです。
 </h4>
 <h3 align="center">
-  <a href="./README_zh-TW.md">繁體中文</a>｜<a href="./README_ja-JP.md">日本語</a>
+  <a href="./README_zh-TW.md">繁體中文</a>｜<a href="./README.md">English</a>
 </h3>
 
-## Features
+## 特徴
 
-- Search existing CSP works for additional information, including:
-  - Work name
-  - Total working time
-  - CSP version used for the work (displayed as the large image text)
+- 既存のクリスタ作品を検索し、以下の追加情報を表示できます：
+  - 作品名
+  - 総作業時間
+  - 作品で使用されたクリスタのバージョン（Large Image Textとして表示）
 
-- Supports the following languages:
+- 以下の言語に対応しています：
   - English
-  - Japanese
-  - Traditional Chinese
-  - Simplified Chinese
+  - 日本語
+  - 繁體中文
+  - 簡體中文
 
-- Supports Discord Rich Presence buttons
+- Discord Rich Presence のボタンに対応
 
-## Usage
+## 使い方
 
-1. Run `CspDiscordRpcGd.exe`  
+1. `CspDiscordRpcGd.exe` を実行します  
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/ProgramGUI.png">
 
-2. (Optional, but recommended) Choose a CSP work to show more detailed information in your Discord Rich Presence  
+2. （任意ですが推奨）CSP 作品を選択すると、Discord Rich Presence により詳細な情報を表示できます  
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/ChooseWork.png">
 
-3. Choose your preferred language for the Rich Presence text  
+3. Rich Presence に表示するテキストの言語を選択します  
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_English.png">
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_Japanese.png">
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_TraditionalChinese.png">
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_SimplifiedChinese.png">
 
-4. Turn on Discord Rich Presence  
+4. Discord Rich Presence を有効にします  
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/TurnOnRichPresence.png">
