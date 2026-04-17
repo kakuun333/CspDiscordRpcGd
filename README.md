@@ -1,5 +1,4 @@
-# KDialogue
-KDialogue for Godot 4.5
+# CspDiscordRpcGdCpp
 
 ## Build
 - Clone the repository
