@@ -59,6 +59,7 @@ set(RESOURCE_SVG_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CodeFoldedRightArrow.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CurveConstant.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/PanelContainer.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/NodeWarning.svg"
 )
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${RESOURCE_SVG_FILES})
 

@@ -17,6 +17,7 @@ class Label;
 class LineEdit;
 class OptionButton;
 class Texture2D;
+class TextureRect;
 class VBoxContainer;
 
 } // namespace godot
@@ -60,7 +61,8 @@ private:
     godot::GridContainer* CreateCollapsiblePropertyGroup(godot::VBoxContainer* ParentContainer,
                                                          const godot::String& Name,
                                                          const godot::String& Title,
-                                                         bool bExpandedByDefault);
+                                                         bool bExpandedByDefault,
+                                                         const godot::String& WarningTooltipText);
     void AddResizeHandle(const godot::String& Name,
                          godot::DisplayServer::WindowResizeEdge ResizeEdge,
                          godot::Control::CursorShape CursorShape,
@@ -74,6 +76,7 @@ private:
                          float OffsetBottom);
     godot::Button* CreateTitleBarButton(const godot::String& Text, const godot::String& TooltipText) const;
     godot::Button* CreateWindowControlButton(const godot::Ref<godot::Texture2D>& Icon, const godot::String& TooltipText) const;
+    godot::TextureRect* CreateHeaderWarningIcon(const godot::String& TooltipText) const;
 
     void OnTitleBarGuiInput(const godot::Ref<godot::InputEvent>& Event);
     void OnResizeHandleGuiInput(const godot::Ref<godot::InputEvent>& Event, int32_t ResizeEdge);
