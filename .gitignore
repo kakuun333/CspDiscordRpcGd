@@ -21,3 +21,7 @@ mono_crash.*.json
 # codex
 cmake-build-codex-check
 build_codex_check
+
+# Binary Files
+*.dll
+*.pdb
