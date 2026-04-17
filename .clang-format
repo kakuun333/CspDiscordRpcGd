@@ -1,0 +1,187 @@
+﻿# LLVM version 21.1.8
+---
+Language: Cpp
+Standard: c++20
+BasedOnStyle: Microsoft
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -4
+BracedInitializerIndentWidth: 4
+
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortCaseExpressionOnASingleLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortEnumsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortNamespacesOnASingleLine: false
+AllowShortLambdasOnASingleLine: All
+BinPackParameters: OnePerLine
+InsertTrailingCommas: Wrapped
+InsertNewlineAtEOF: true
+MacroBlockBegin: ""
+MacroBlockEnd: ""
+MaxEmptyLinesToKeep: 2
+FixNamespaceComments: true
+LambdaBodyIndentation: OuterScope
+BinPackArguments: false
+BitFieldColonSpacing: Both
+ColumnLimit: 0
+PackConstructorInitializers: Never
+Cpp11BracedListStyle: false
+CompactNamespaces: false
+EmptyLineAfterAccessModifier: Never
+EnumTrailingComma: Leave
+NamespaceIndentation: None
+RemoveEmptyLinesInUnwrappedLines: true
+RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Leave
+SortUsingDeclarations: LexicographicNumeric
+
+# Space
+SpacesInParentheses: false
+SpaceBeforeCpp11BracedList: false
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterOperatorKeyword: false
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Never
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: false
+SpacesInSquareBrackets: false
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterOverloadedOperator: false
+  AfterPlacementOperator: true
+  AfterRequiresInClause: false
+  AfterRequiresInExpression: false
+  BeforeNonEmptyParentheses: false
+
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: -1
+
+# Break
+BreakTemplateDeclarations: Yes
+BreakBeforeBraces: Custom
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+BreakBinaryOperations: Never
+BreakAfterAttributes: Never
+BreakArrays: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTemplateCloser: false
+BreakFunctionDefinitionParameters: false
+BreakStringLiterals: false
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+
+# Indent
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+IndentExportBlock: false
+IndentAccessModifiers: false
+IndentCaseBlocks: false
+IndentExternBlock: NoIndent
+IndentRequiresClause: false
+IndentWrappedFunctionNames: false
+
+# Align
+PointerAlignment: Left
+ReferenceAlignment: Left
+QualifierAlignment: Leave # DO NOT CHANGE
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: DontAlign
+AlignConsecutiveDeclarations: false
+AlignOperands: Align
+AlignArrayOfStructures: Left
+
+AlignConsecutiveTableGenDefinitionColons:
+  Enabled: false
+
+AlignConsecutiveBitFields:
+  Enabled: false
+  AcrossEmptyLines: true
+  AcrossComments: false
+
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCaseColons: false
+
+AlignConsecutiveAssignments:
+  Enabled: false
+  AcrossEmptyLines: true
+  AcrossComments: false
+
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
+
+# Wrap
+WrapNamespaceBodyWithEmptyLines: Always
+
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  BeforeWhile: true
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+
+# Include
+SortIncludes:
+  Enabled: true
+  IgnoreCase: false
+
+IncludeBlocks: Regroup
+IncludeIsMainRegex: '([-_](test|unittest))?$'
+IncludeCategories:
+  - Regex: '.*'
+    Priority: 1
+    SortPriority: 0
+    CaseSensitive: true
+  - Regex: '^".*'
+    Priority: 2
+  - Regex: '^<.*'
+    Priority: 3
+
+...

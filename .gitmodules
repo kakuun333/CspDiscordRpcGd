@@ -1,0 +1,10 @@
+[submodule "Dependencies/godot-cpp"]
+	path = Dependencies/godot-cpp
+	url = https://github.com/godotengine/godot-cpp
+	branch = 4.5
+[submodule "Dependencies/glaze"]
+	path = Dependencies/glaze
+	url = https://github.com/stephenberry/glaze.git
+[submodule "Dependencies/discord-presence"]
+	path = Dependencies/discord-presence
+	url = https://github.com/EclipseMenu/discord-presence.git
