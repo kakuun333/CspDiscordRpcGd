@@ -16,6 +16,8 @@ class InputEvent;
 class Label;
 class LineEdit;
 class OptionButton;
+class PopupMenu;
+class StatusIndicator;
 class Texture2D;
 class TextureRect;
 class VBoxContainer;
@@ -26,12 +28,19 @@ namespace CspDiscordRpcGdCpp
 {
 
 class CspDiscordRpcGdCppWorksWindow;
+class CspDiscordRpcGdCppCloseWindow;
 
 class CspDiscordRpcGdCppMainControl final : public godot::Control
 {
     GDCLASS(CspDiscordRpcGdCppMainControl, godot::Control)
 
 public:
+    enum class ECloseAction : int32_t
+    {
+        MinimizeToSystemTray = 0,
+        Close,
+    };
+
     enum class ERichPresenceTextLanguage : int32_t
     {
         English = 0,
@@ -58,6 +67,9 @@ private:
     void OnPropertySettingsBoolChanged(bool bValue);
     void OnPropertySettingsIndexChanged(int32_t Value);
     void OnPropertySettingsTextChanged(const godot::String& Value);
+    void EnsureCloseStatusIndicator();
+    void ExecuteCloseAction(ECloseAction CloseAction);
+    void SetWindowControlButtonHighlight(godot::Button* WindowControlButton, const godot::Color& HighlightColor) const;
     void UpdateStatusText(const godot::String& StatusText) const;
     void SyncToViewportSize();
     void CaptureRestoreWindowState();
@@ -92,13 +104,21 @@ private:
     void OnClosePressed();
     void OnChooseCspWorkPressed();
     void OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath);
+    void OnCloseWindowConfirmed(int32_t CloseAction, bool bDontShowAgain);
+    void OnCloseWindowTreeExited();
+    void OnCloseStatusIndicatorPressed(int32_t MouseButton, const godot::Vector2i& MousePosition);
+    void OnCloseStatusIndicatorMenuIdPressed(int32_t Id);
+    void OnWindowControlButtonMouseEntered(godot::Button* WindowControlButton, int32_t WindowControlButtonStyle);
+    void OnWindowControlButtonMouseExited(godot::Button* WindowControlButton);
     void OnWorksWindowTreeExited();
     void OnCollapsiblePropertyGroupToggled(godot::Button* ToggleButton, godot::Control* ContentContainer);
     void OnDiscordRichPresenceToggled(bool bToggled);
     void OnRichPresenceTextLanguageSelected(int32_t SelectedIndex);
     void OnUpdatePresencePressed();
 
+    godot::Button* MinimizeButton{ nullptr };
     godot::Button* MaximizeButton{ nullptr };
+    godot::Button* CloseButton{ nullptr };
     godot::CheckButton* DiscordRichPresenceCheckButton{ nullptr };
     godot::Button* ChooseCSPWorkButton{ nullptr };
     godot::OptionButton* RichPresenceTextLanguageOptionButton{ nullptr };
@@ -110,13 +130,18 @@ private:
     godot::LineEdit* Button2LabelLineEdit{ nullptr };
     godot::LineEdit* Button2UrlLineEdit{ nullptr };
     godot::Label* StatusLabel{ nullptr };
+    godot::PopupMenu* CloseStatusIndicatorMenu{ nullptr };
+    godot::StatusIndicator* CloseStatusIndicator{ nullptr };
+    CspDiscordRpcGdCppCloseWindow* CloseWindow{ nullptr };
     CspDiscordRpcGdCppWorksWindow* WorksWindow{ nullptr };
     godot::Vector2i RestoreWindowPosition;
     godot::Vector2i RestoreWindowSize;
     CspDiscordRpcGdCppWorkData SelectedCspWorkData;
     godot::String SelectedCSPWorkPath;
     int64_t PresenceStartTimestamp{ 0 };
+    ECloseAction CloseAction{ ECloseAction::MinimizeToSystemTray };
     ERichPresenceTextLanguage RichPresenceTextLanguage{ ERichPresenceTextLanguage::English };
+    bool bDontShowCloseWindowAgain{ false };
     bool bIsApplyingPropertySettings{ false };
     bool bHasRestoreWindowState{ false };
     bool bIsWindowMaximized{ false };

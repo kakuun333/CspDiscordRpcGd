@@ -1,3 +1,4 @@
+#include "CspDiscordRpcGdCppCloseWindow.h"
 #include "CspDiscordRpcGdCppFunctionLibrary.h"
 #include "CspDiscordRpcGdCppMainControl.h"
 #include "CspDiscordRpcGdCppWorkItem.h"
@@ -13,6 +14,7 @@ void InitializeModule(godot::ModuleInitializationLevel InitLevel)
     if (InitLevel == godot::MODULE_INITIALIZATION_LEVEL_SCENE)
     {
         godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppMainControl>();
+        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppCloseWindow>();
         godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkItem>();
         godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorksWindow>();
         godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppFunctionLibrary>();

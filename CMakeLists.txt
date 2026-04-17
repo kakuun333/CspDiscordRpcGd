@@ -60,19 +60,44 @@ set(RESOURCE_SVG_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CurveConstant.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/PanelContainer.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/NodeWarning.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CspDiscordRpcGd.svg"
 )
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${RESOURCE_SVG_FILES})
 
 set(GENERATED_SVG_DIR "${CMAKE_CURRENT_BINARY_DIR}/Generated")
 set(GENERATED_SVG_HEADER "${GENERATED_SVG_DIR}/EmbeddedSvgResources.h")
 
+function(append_embedded_svg ResourceSvgName ResourceSvgFile)
+    set(ResourceSvgChunkSize 12000)
+    file(READ "${ResourceSvgFile}" ResourceSvgContent)
+    string(LENGTH "${ResourceSvgContent}" ResourceSvgContentLength)
+
+    file(APPEND "${GENERATED_SVG_HEADER}" "inline constexpr const char* ${ResourceSvgName} =\n")
+
+    set(ResourceSvgOffset 0)
+    while(ResourceSvgOffset LESS ResourceSvgContentLength)
+        math(EXPR ResourceSvgRemainingLength "${ResourceSvgContentLength} - ${ResourceSvgOffset}")
+
+        if(ResourceSvgRemainingLength GREATER ResourceSvgChunkSize)
+            set(ResourceSvgCurrentChunkLength ${ResourceSvgChunkSize})
+        else()
+            set(ResourceSvgCurrentChunkLength ${ResourceSvgRemainingLength})
+        endif()
+
+        string(SUBSTRING "${ResourceSvgContent}" ${ResourceSvgOffset} ${ResourceSvgCurrentChunkLength} ResourceSvgChunk)
+        file(APPEND "${GENERATED_SVG_HEADER}" "R\"__CSP_SVG__(${ResourceSvgChunk})__CSP_SVG__\"\n")
+        math(EXPR ResourceSvgOffset "${ResourceSvgOffset} + ${ResourceSvgCurrentChunkLength}")
+    endwhile()
+
+    file(APPEND "${GENERATED_SVG_HEADER}" ";\n")
+endfunction()
+
 file(MAKE_DIRECTORY "${GENERATED_SVG_DIR}")
 file(WRITE "${GENERATED_SVG_HEADER}" "#pragma once\n\nnamespace CspDiscordRpcGdCpp::EmbeddedSvgResources\n{\n")
 
 foreach(ResourceSvgFile IN LISTS RESOURCE_SVG_FILES)
     get_filename_component(ResourceSvgName "${ResourceSvgFile}" NAME_WE)
-    file(READ "${ResourceSvgFile}" ResourceSvgContent)
-    file(APPEND "${GENERATED_SVG_HEADER}" "inline constexpr const char* ${ResourceSvgName} = R\"__CSP_SVG__(\n${ResourceSvgContent}\n)__CSP_SVG__\";\n")
+    append_embedded_svg("${ResourceSvgName}" "${ResourceSvgFile}")
 endforeach()
 
 file(APPEND "${GENERATED_SVG_HEADER}" "} // namespace CspDiscordRpcGdCpp::EmbeddedSvgResources\n")
@@ -89,6 +114,8 @@ add_library(${PROJECT_NAME} SHARED
         Source/Main/CspDiscordRpcService.h
         Source/Main/CspDiscordRpcGdCppMainControl.cpp
         Source/Main/CspDiscordRpcGdCppMainControl.h
+        Source/Main/CspDiscordRpcGdCppCloseWindow.cpp
+        Source/Main/CspDiscordRpcGdCppCloseWindow.h
         Source/Main/CspDiscordRpcGdCppWorkData.h
         Source/Main/CspDiscordRpcGdCppWorkItem.cpp
         Source/Main/CspDiscordRpcGdCppWorkItem.h
@@ -172,4 +199,3 @@ if(GODOT_PROJECT_BIN_DIR)
 else()
     message(WARNING "GODOT_PROJECT_BIN_DIR is not defined. Please set it as a CMake Cache Variable, otherwise automatic deployment of dynamic libraries will be skipped.")
 endif()
-

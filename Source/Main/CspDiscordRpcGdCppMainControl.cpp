@@ -1,3 +1,4 @@
+#include "CspDiscordRpcGdCppCloseWindow.h"
 #include "CspDiscordRpcGdCppMainControl.h"
 
 #include "CspDiscordRpcGdCppWorkData.h"
@@ -20,8 +21,10 @@
 #include "godot_cpp/classes/os.hpp"
 #include "godot_cpp/classes/option_button.hpp"
 #include "godot_cpp/classes/panel_container.hpp"
+#include "godot_cpp/classes/popup_menu.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/scroll_container.hpp"
+#include "godot_cpp/classes/status_indicator.hpp"
 #include "godot_cpp/classes/style_box_flat.hpp"
 #include "godot_cpp/classes/texture_rect.hpp"
 #include "godot_cpp/classes/v_box_container.hpp"
@@ -48,12 +51,17 @@
 #include <unordered_set>
 #include <vector>
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 namespace
 {
 
 constexpr float ResizeBorderThickness = 3.0f;
 constexpr float ResizeCornerExtent = 12.0f;
-constexpr const char* PropertySettingsFileName = "PropertySettings.json";
+constexpr const char* SettingsFileName = "Settings.json";
 
 using CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkData;
 
@@ -66,6 +74,7 @@ enum class EWindowControlIcon : uint8_t
     Warning,
     FoldExpanded,
     FoldCollapsed,
+    CspDiscordRpcGd,
 };
 
 enum class ERichPresenceTextType : uint8_t
@@ -73,6 +82,12 @@ enum class ERichPresenceTextType : uint8_t
     State,
     Details,
     LargeImageText,
+};
+
+enum class EWindowControlButtonStyle : int32_t
+{
+    Default = 0,
+    Close,
 };
 
 [[nodiscard]] godot::String GetEmbeddedSvgContent(EWindowControlIcon Icon)
@@ -93,6 +108,8 @@ enum class ERichPresenceTextType : uint8_t
             return CspDiscordRpcGdCpp::EmbeddedSvgResources::CodeFoldDownArrow;
         case EWindowControlIcon::FoldCollapsed:
             return CspDiscordRpcGdCpp::EmbeddedSvgResources::CodeFoldedRightArrow;
+        case EWindowControlIcon::CspDiscordRpcGd:
+            return CspDiscordRpcGdCpp::EmbeddedSvgResources::CspDiscordRpcGd;
         default:
             return {};
     }
@@ -126,6 +143,7 @@ enum class ERichPresenceTextType : uint8_t
     static godot::Ref<godot::Texture2D> WarningIconTexture;
     static godot::Ref<godot::Texture2D> FoldExpandedIconTexture;
     static godot::Ref<godot::Texture2D> FoldCollapsedIconTexture;
+    static godot::Ref<godot::Texture2D> CspDiscordRpcGdIconTexture;
 
     godot::Ref<godot::Texture2D>* IconTexture = nullptr;
 
@@ -151,6 +169,9 @@ enum class ERichPresenceTextType : uint8_t
             break;
         case EWindowControlIcon::FoldCollapsed:
             IconTexture = &FoldCollapsedIconTexture;
+            break;
+        case EWindowControlIcon::CspDiscordRpcGd:
+            IconTexture = &CspDiscordRpcGdIconTexture;
             break;
         default:
             return MinimizeIconTexture;
@@ -233,9 +254,37 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
     return Extension == L".clip" || Extension == L".cmc" || Extension == L".lip";
 }
 
+void SetNativeWindowVisibility(const godot::Window* Window, bool bVisible)
+{
+#ifdef _WIN32
+    if (Window == nullptr)
+    {
+        return;
+    }
+
+    godot::DisplayServer* DisplayServer = godot::DisplayServer::get_singleton();
+    if (DisplayServer == nullptr)
+    {
+        return;
+    }
+
+    const HWND NativeWindowHandle =
+        reinterpret_cast<HWND>(DisplayServer->window_get_native_handle(godot::DisplayServer::WINDOW_HANDLE, Window->get_window_id()));
+    if (NativeWindowHandle == nullptr)
+    {
+        return;
+    }
+
+    ShowWindow(NativeWindowHandle, bVisible ? SW_RESTORE : SW_HIDE);
+#else
+    static_cast<void>(Window);
+    static_cast<void>(bVisible);
+#endif
+}
+
 [[nodiscard]] std::filesystem::path GetPropertySettingsFilePath()
 {
-    return std::filesystem::current_path() / PropertySettingsFileName;
+    return std::filesystem::current_path() / SettingsFileName;
 }
 
 [[nodiscard]] bool MatchesXmlPath(const std::vector<godot::String>& CurrentPath, std::initializer_list<const char*> ExpectedPath)
@@ -579,6 +628,12 @@ void CspDiscordRpcGdCppMainControl::_bind_methods()
     godot::ClassDB::bind_method(godot::D_METHOD("on_resize_handle_gui_input", "event", "resize_edge"), &CspDiscordRpcGdCppMainControl::OnResizeHandleGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_choose_csp_work_pressed"), &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed);
     godot::ClassDB::bind_method(godot::D_METHOD("on_csp_work_chosen", "work_name", "work_path"), &CspDiscordRpcGdCppMainControl::OnCspWorkChosen);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_close_status_indicator_menu_id_pressed", "id"),
+                                &CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorMenuIdPressed);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_window_control_button_mouse_entered", "window_control_button", "window_control_button_style"),
+                                &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_window_control_button_mouse_exited", "window_control_button"),
+                                &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited);
     godot::ClassDB::bind_method(godot::D_METHOD("on_collapsible_property_group_toggled", "toggle_button", "content_container"), &CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled);
     godot::ClassDB::bind_method(godot::D_METHOD("on_rich_presence_text_language_selected", "selected_index"), &CspDiscordRpcGdCppMainControl::OnRichPresenceTextLanguageSelected);
     godot::ClassDB::bind_method(godot::D_METHOD("on_update_presence_pressed"), &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed);
@@ -630,20 +685,49 @@ void CspDiscordRpcGdCppMainControl::_ready()
     TitleBarContainer->add_theme_constant_override("separation", 4);
     TitleBarPanel->add_child(TitleBarContainer);
 
-    godot::Button* TitleBarButton = CreateTitleBarButton("CSP Discord RPC", "");
+    godot::MarginContainer* TitleBarIconMargin = memnew(godot::MarginContainer);
+    TitleBarIconMargin->set_name("TitleBarIconMargin");
+    TitleBarIconMargin->add_theme_constant_override("margin_left", 8);
+
+    godot::TextureRect* TitleBarIcon = memnew(godot::TextureRect);
+    TitleBarIcon->set_name("TitleBarIcon");
+    TitleBarIcon->set_custom_minimum_size(godot::Vector2(20.0F, 20.0F));
+    TitleBarIcon->set_stretch_mode(godot::TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
+    TitleBarIcon->set_expand_mode(godot::TextureRect::EXPAND_IGNORE_SIZE);
+    TitleBarIcon->set_texture(GetWindowControlIconTexture(EWindowControlIcon::CspDiscordRpcGd));
+
+    TitleBarIconMargin->add_child(TitleBarIcon);
+    TitleBarContainer->add_child(TitleBarIconMargin);
+
+    godot::Button* TitleBarButton = CreateTitleBarButton("CspDiscordRpcGd", "");
     TitleBarButton->connect("gui_input", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput));
     TitleBarContainer->add_child(TitleBarButton);
 
-    godot::Button* MinimizeButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Minimize), "Minimize");
+    MinimizeButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Minimize), "Minimize");
+    SetWindowControlButtonHighlight(MinimizeButton, godot::Color(0.0F, 0.0F, 0.0F, 0.0F));
     MinimizeButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnMinimizePressed));
+    MinimizeButton->connect("mouse_entered",
+                            callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered)
+                                .bind(MinimizeButton, static_cast<int32_t>(EWindowControlButtonStyle::Default)));
+    MinimizeButton->connect("mouse_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited).bind(MinimizeButton));
     TitleBarContainer->add_child(MinimizeButton);
 
     MaximizeButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Maximize), "Toggle maximize");
+    SetWindowControlButtonHighlight(MaximizeButton, godot::Color(0.0F, 0.0F, 0.0F, 0.0F));
     MaximizeButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnMaximizePressed));
+    MaximizeButton->connect("mouse_entered",
+                            callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered)
+                                .bind(MaximizeButton, static_cast<int32_t>(EWindowControlButtonStyle::Default)));
+    MaximizeButton->connect("mouse_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited).bind(MaximizeButton));
     TitleBarContainer->add_child(MaximizeButton);
 
-    godot::Button* CloseButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Close), "Close");
+    CloseButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Close), "Close");
+    SetWindowControlButtonHighlight(CloseButton, godot::Color(0.0F, 0.0F, 0.0F, 0.0F));
     CloseButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnClosePressed));
+    CloseButton->connect("mouse_entered",
+                         callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered)
+                             .bind(CloseButton, static_cast<int32_t>(EWindowControlButtonStyle::Close)));
+    CloseButton->connect("mouse_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited).bind(CloseButton));
     TitleBarContainer->add_child(CloseButton);
 
     godot::PanelContainer* ContentPanel = memnew(godot::PanelContainer);
@@ -920,6 +1004,25 @@ void CspDiscordRpcGdCppMainControl::LoadPropertySettings()
         SetRichPresenceTextLanguage(static_cast<int32_t>(PropertySettings["RichPresenceTextLanguage"]));
     }
 
+    if (PropertySettings.has("CloseAction"))
+    {
+        switch (static_cast<ECloseAction>(static_cast<int32_t>(PropertySettings["CloseAction"])))
+        {
+            case ECloseAction::MinimizeToSystemTray:
+            case ECloseAction::Close:
+                CloseAction = static_cast<ECloseAction>(static_cast<int32_t>(PropertySettings["CloseAction"]));
+                break;
+            default:
+                CloseAction = ECloseAction::MinimizeToSystemTray;
+                break;
+        }
+    }
+
+    if (PropertySettings.has("DontShowCloseWindowAgain"))
+    {
+        bDontShowCloseWindowAgain = static_cast<bool>(PropertySettings["DontShowCloseWindowAgain"]);
+    }
+
     if (PropertySettings.has("SelectedCSPWorkPath"))
     {
         ApplySelectedCspWorkPath(static_cast<godot::String>(PropertySettings["SelectedCSPWorkPath"]), {});
@@ -975,6 +1078,8 @@ void CspDiscordRpcGdCppMainControl::SavePropertySettings() const
 
     godot::Dictionary PropertySettings;
     PropertySettings["RichPresenceTextLanguage"] = static_cast<int32_t>(RichPresenceTextLanguage);
+    PropertySettings["CloseAction"] = static_cast<int32_t>(CloseAction);
+    PropertySettings["DontShowCloseWindowAgain"] = bDontShowCloseWindowAgain;
     PropertySettings["DiscordRichPresenceEnabled"] =
         DiscordRichPresenceCheckButton != nullptr ? DiscordRichPresenceCheckButton->is_pressed() : false;
     PropertySettings["SelectedCSPWorkPath"] = SelectedCSPWorkPath;
@@ -1054,6 +1159,93 @@ void CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged(const godot::S
 {
     static_cast<void>(Value);
     OnPropertySettingsChanged();
+}
+
+void CspDiscordRpcGdCppMainControl::EnsureCloseStatusIndicator()
+{
+    if (CloseStatusIndicator != nullptr)
+    {
+        return;
+    }
+
+    godot::DisplayServer* DisplayServer = godot::DisplayServer::get_singleton();
+    if (DisplayServer == nullptr || !DisplayServer->has_feature(godot::DisplayServer::FEATURE_STATUS_INDICATOR))
+    {
+        return;
+    }
+
+    CloseStatusIndicator = memnew(godot::StatusIndicator);
+    CloseStatusIndicator->set_name("CloseStatusIndicator");
+    CloseStatusIndicator->set_visible(false);
+    CloseStatusIndicator->set_tooltip("CspDiscordRpcGd");
+    CloseStatusIndicator->set_icon(GetWindowControlIconTexture(EWindowControlIcon::CspDiscordRpcGd));
+    CloseStatusIndicator->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorPressed));
+
+    CloseStatusIndicatorMenu = memnew(godot::PopupMenu);
+    CloseStatusIndicatorMenu->set_name("CloseStatusIndicatorMenu");
+    CloseStatusIndicatorMenu->add_item("Show", 0);
+    CloseStatusIndicatorMenu->add_item("Exit", 1);
+    CloseStatusIndicatorMenu->connect("id_pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorMenuIdPressed));
+    add_child(CloseStatusIndicatorMenu);
+    CloseStatusIndicator->set_menu(CloseStatusIndicatorMenu->get_path());
+
+    add_child(CloseStatusIndicator);
+}
+
+void CspDiscordRpcGdCppMainControl::SetWindowControlButtonHighlight(godot::Button* WindowControlButton, const godot::Color& HighlightColor) const
+{
+    if (WindowControlButton == nullptr)
+    {
+        return;
+    }
+
+    godot::Ref<godot::StyleBoxFlat> PanelStyle = CreatePanelStyle(HighlightColor);
+    WindowControlButton->add_theme_stylebox_override("normal", PanelStyle);
+    WindowControlButton->add_theme_stylebox_override("hover", PanelStyle);
+    WindowControlButton->add_theme_stylebox_override("pressed", PanelStyle);
+    WindowControlButton->add_theme_stylebox_override("focus", PanelStyle);
+}
+
+void CspDiscordRpcGdCppMainControl::ExecuteCloseAction(ECloseAction InCloseAction)
+{
+    switch (InCloseAction)
+    {
+        case ECloseAction::MinimizeToSystemTray:
+            EnsureCloseStatusIndicator();
+
+            if (godot::Window* OwnerWindow = get_window())
+            {
+                OwnerWindow->hide();
+                SetNativeWindowVisibility(OwnerWindow, false);
+            }
+
+            if (CloseStatusIndicator != nullptr)
+            {
+                CloseStatusIndicator->set_visible(true);
+                UpdateStatusText("Window minimized to the system tray.");
+            }
+            else
+            {
+                godot::DisplayServer::get_singleton()->window_set_mode(godot::DisplayServer::WINDOW_MODE_MINIMIZED);
+                UpdateStatusText("Status indicator is unavailable, so the window was minimized instead.");
+            }
+
+            break;
+        case ECloseAction::Close:
+            if (CloseStatusIndicator != nullptr)
+            {
+                CloseStatusIndicator->set_visible(false);
+            }
+
+            if (godot::SceneTree* SceneTree = get_tree())
+            {
+                SceneTree->quit();
+            }
+
+            break;
+        default:
+            break;
+    }
 }
 
 void CspDiscordRpcGdCppMainControl::UpdateStatusText(const godot::String& StatusText) const
@@ -1272,9 +1464,11 @@ godot::Button* CspDiscordRpcGdCppMainControl::CreateWindowControlButton(const go
     {
         WindowControlButton->set_button_icon(Icon);
         WindowControlButton->set_expand_icon(false);
+        WindowControlButton->set_icon_alignment(godot::HORIZONTAL_ALIGNMENT_CENTER);
+        WindowControlButton->set_vertical_icon_alignment(godot::VERTICAL_ALIGNMENT_CENTER);
     }
 
-    WindowControlButton->set_flat(true);
+    WindowControlButton->set_flat(false);
     WindowControlButton->set_focus_mode(godot::Control::FOCUS_NONE);
     WindowControlButton->set_custom_minimum_size(godot::Vector2(36.0F, 28.0F));
     WindowControlButton->set_tooltip_text(TooltipText);
@@ -1346,10 +1540,32 @@ void CspDiscordRpcGdCppMainControl::OnMaximizePressed()
 
 void CspDiscordRpcGdCppMainControl::OnClosePressed()
 {
-    if (godot::SceneTree* SceneTree = get_tree())
+    if (bDontShowCloseWindowAgain)
     {
-        SceneTree->quit();
+        ExecuteCloseAction(CloseAction);
+        return;
     }
+
+    if (CloseWindow == nullptr)
+    {
+        CloseWindow = memnew(CspDiscordRpcGdCppCloseWindow);
+        CloseWindow->connect("confirmed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseWindowConfirmed));
+        CloseWindow->connect("tree_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseWindowTreeExited));
+
+        if (godot::Window* OwnerWindow = get_window())
+        {
+            OwnerWindow->add_child(CloseWindow);
+        }
+        else
+        {
+            add_child(CloseWindow);
+        }
+    }
+
+    CloseWindow->SetSelectedCloseAction(static_cast<CspDiscordRpcGdCppCloseWindow::ECloseAction>(CloseAction));
+    CloseWindow->SetDontShowAgain(bDontShowCloseWindowAgain);
+    CloseWindow->set_exclusive(false);
+    CloseWindow->popup_centered(godot::Vector2i(520, 280));
 }
 
 void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
@@ -1391,6 +1607,90 @@ void CspDiscordRpcGdCppMainControl::OnCspWorkChosen(const godot::String& WorkNam
 void CspDiscordRpcGdCppMainControl::OnWorksWindowTreeExited()
 {
     WorksWindow = nullptr;
+}
+
+void CspDiscordRpcGdCppMainControl::OnCloseWindowConfirmed(int32_t InCloseAction, bool bDontShowAgain)
+{
+    switch (static_cast<ECloseAction>(InCloseAction))
+    {
+        case ECloseAction::MinimizeToSystemTray:
+        case ECloseAction::Close:
+            CloseAction = static_cast<ECloseAction>(InCloseAction);
+            break;
+        default:
+            CloseAction = ECloseAction::MinimizeToSystemTray;
+            break;
+    }
+
+    bDontShowCloseWindowAgain = bDontShowAgain;
+    SavePropertySettings();
+    ExecuteCloseAction(CloseAction);
+}
+
+void CspDiscordRpcGdCppMainControl::OnCloseWindowTreeExited()
+{
+    CloseWindow = nullptr;
+}
+
+void CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorPressed(int32_t MouseButton, const godot::Vector2i& MousePosition)
+{
+    static_cast<void>(MousePosition);
+
+    if (MouseButton != godot::MOUSE_BUTTON_LEFT)
+    {
+        return;
+    }
+
+    if (CloseStatusIndicator != nullptr)
+    {
+        CloseStatusIndicator->set_visible(false);
+    }
+
+    if (godot::Window* OwnerWindow = get_window())
+    {
+        OwnerWindow->show();
+        OwnerWindow->set_mode(godot::Window::MODE_WINDOWED);
+        SetNativeWindowVisibility(OwnerWindow, true);
+        OwnerWindow->move_to_foreground();
+        OwnerWindow->grab_focus();
+    }
+
+    grab_focus();
+    UpdateStatusText("Window restored from the system tray.");
+}
+
+void CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorMenuIdPressed(int32_t Id)
+{
+    switch (Id)
+    {
+        case 0:
+            OnCloseStatusIndicatorPressed(godot::MOUSE_BUTTON_LEFT, {});
+            break;
+        case 1:
+            ExecuteCloseAction(ECloseAction::Close);
+            break;
+        default:
+            break;
+    }
+}
+
+void CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered(godot::Button* WindowControlButton, int32_t WindowControlButtonStyle)
+{
+    switch (static_cast<EWindowControlButtonStyle>(WindowControlButtonStyle))
+    {
+        case EWindowControlButtonStyle::Close:
+            SetWindowControlButtonHighlight(WindowControlButton, godot::Color(0.82F, 0.23F, 0.23F, 1.0F));
+            break;
+        case EWindowControlButtonStyle::Default:
+        default:
+            SetWindowControlButtonHighlight(WindowControlButton, godot::Color(0.24F, 0.26F, 0.32F, 1.0F));
+            break;
+    }
+}
+
+void CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited(godot::Button* WindowControlButton)
+{
+    SetWindowControlButtonHighlight(WindowControlButton, godot::Color(0.0F, 0.0F, 0.0F, 0.0F));
 }
 
 void CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled(godot::Button* ToggleButton, godot::Control* ContentContainer)
