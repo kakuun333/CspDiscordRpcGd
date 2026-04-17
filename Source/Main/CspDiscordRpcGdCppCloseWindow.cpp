@@ -45,7 +45,7 @@ namespace
 {
     godot::Button* ActionButton = memnew(godot::Button);
     ActionButton->set_text(Text);
-    ActionButton->set_custom_minimum_size(godot::Vector2(120.0F, 32.0F));
+    ActionButton->set_custom_minimum_size(godot::Vector2(120.0f, 32.0f));
     return ActionButton;
 }
 
@@ -110,9 +110,9 @@ void CspDiscordRpcGdCppCloseWindow::EnsureUiBuilt()
 
     godot::PanelContainer* TitleBarPanel = memnew(godot::PanelContainer);
     TitleBarPanel->set_name("TitleBarPanel");
-    TitleBarPanel->set_custom_minimum_size(godot::Vector2(0.0F, 40.0F));
+    TitleBarPanel->set_custom_minimum_size(godot::Vector2(0.0f, 40.0f));
     TitleBarPanel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    TitleBarPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.11F, 0.12F, 0.16F, 1.0F)));
+    TitleBarPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.11f, 0.12f, 0.16f, 1.0f)));
     RootContainer->add_child(TitleBarPanel);
 
     godot::HBoxContainer* TitleBarContainer = memnew(godot::HBoxContainer);
@@ -129,7 +129,7 @@ void CspDiscordRpcGdCppCloseWindow::EnsureUiBuilt()
     ContentPanel->set_name("ContentPanel");
     ContentPanel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ContentPanel->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    ContentPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.16F, 0.17F, 0.22F, 1.0F)));
+    ContentPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.16f, 0.17f, 0.22f, 1.0f)));
     RootContainer->add_child(ContentPanel);
 
     godot::MarginContainer* ContentMargin = memnew(godot::MarginContainer);

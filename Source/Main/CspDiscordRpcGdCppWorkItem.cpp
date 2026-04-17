@@ -18,9 +18,9 @@ namespace
 {
     godot::Ref<godot::StyleBoxFlat> StyleBox;
     StyleBox.instantiate();
-    StyleBox->set_bg_color(bSelected ? godot::Color(0.28F, 0.34F, 0.49F, 1.0F) : godot::Color(0.18F, 0.20F, 0.27F, 1.0F));
+    StyleBox->set_bg_color(bSelected ? godot::Color(0.28f, 0.34f, 0.49f, 1.0f) : godot::Color(0.18f, 0.20f, 0.27f, 1.0f));
     StyleBox->set_border_width_all(1);
-    StyleBox->set_border_color(bSelected ? godot::Color(0.62F, 0.74F, 1.0F, 1.0F) : godot::Color(0.24F, 0.27F, 0.34F, 1.0F));
+    StyleBox->set_border_color(bSelected ? godot::Color(0.62f, 0.74f, 1.0f, 1.0f) : godot::Color(0.24f, 0.27f, 0.34f, 1.0f));
     StyleBox->set_corner_radius_all(10);
     StyleBox->set_content_margin_all(10);
     return StyleBox;
@@ -95,14 +95,14 @@ void CspDiscordRpcGdCppWorkItem::EnsureUIBuilt()
     }
 
     set_name("CspDiscordRpcGdCppWorkItem");
-    set_custom_minimum_size(godot::Vector2(180.0F, 220.0F));
+    set_custom_minimum_size(godot::Vector2(180.0f, 220.0f));
     set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     set_mouse_filter(godot::Control::MOUSE_FILTER_STOP);
     add_theme_constant_override("separation", 10);
 
     ThumbnailPanel = memnew(godot::PanelContainer);
     ThumbnailPanel->set_name("ThumbnailPanel");
-    ThumbnailPanel->set_custom_minimum_size(godot::Vector2(0.0F, 180.0F));
+    ThumbnailPanel->set_custom_minimum_size(godot::Vector2(0.0f, 180.0f));
     ThumbnailPanel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ThumbnailPanel->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ThumbnailPanel->set_mouse_filter(godot::Control::MOUSE_FILTER_IGNORE);
@@ -137,7 +137,7 @@ void CspDiscordRpcGdCppWorkItem::RefreshUI()
     ThumbnailPanel->add_theme_stylebox_override("panel", CreateWorkItemStyle(bSelected));
     ThumbnailTextureRect->set_texture(LoadTextureFromPath(WorkData.ThumbnailPath));
     WorkNameLabel->set_text(WorkData.Name.is_empty() ? godot::String("Untitled Work") : WorkData.Name);
-    WorkNameLabel->set_modulate(bSelected ? godot::Color(1.0F, 1.0F, 1.0F, 1.0F) : godot::Color(0.92F, 0.94F, 0.98F, 1.0F));
+    WorkNameLabel->set_modulate(bSelected ? godot::Color(1.0f, 1.0f, 1.0f, 1.0f) : godot::Color(0.92f, 0.94f, 0.98f, 1.0f));
 }
 
 void CspDiscordRpcGdCppWorkItem::OnGuiInput(const godot::Ref<godot::InputEvent>& Event)

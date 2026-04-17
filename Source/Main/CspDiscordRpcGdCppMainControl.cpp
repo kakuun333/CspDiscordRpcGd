@@ -124,7 +124,7 @@ enum class EWindowControlButtonStyle : int32_t
     godot::Ref<godot::Image> Image;
     Image.instantiate();
 
-    const godot::Error LoadError = Image->load_svg_from_string(SvgContent, 1.0F);
+    const godot::Error LoadError = Image->load_svg_from_string(SvgContent, 1.0f);
     ERR_FAIL_COND_V_MSG(LoadError != godot::OK, {}, godot::vformat("Failed to load embedded SVG. Error code: %d", static_cast<int32_t>(LoadError)));
 
     if (Icon == EWindowControlIcon::Restore)
@@ -680,10 +680,10 @@ void CspDiscordRpcGdCppMainControl::_ready()
 
     godot::PanelContainer* TitleBarPanel = memnew(godot::PanelContainer);
     TitleBarPanel->set_name("TitleBarPanel");
-    TitleBarPanel->set_custom_minimum_size(godot::Vector2(0.0F, 40.0F));
+    TitleBarPanel->set_custom_minimum_size(godot::Vector2(0.0f, 40.0f));
     TitleBarPanel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     TitleBarPanel->set_clip_contents(true);
-    TitleBarPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.11F, 0.12F, 0.16F, 1.0F)));
+    TitleBarPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.11f, 0.12f, 0.16f, 1.0f)));
     RootContainer->add_child(TitleBarPanel);
 
     godot::HBoxContainer* TitleBarContainer = memnew(godot::HBoxContainer);
@@ -699,7 +699,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
 
     godot::TextureRect* TitleBarIcon = memnew(godot::TextureRect);
     TitleBarIcon->set_name("TitleBarIcon");
-    TitleBarIcon->set_custom_minimum_size(godot::Vector2(20.0F, 20.0F));
+    TitleBarIcon->set_custom_minimum_size(godot::Vector2(20.0f, 20.0f));
     TitleBarIcon->set_stretch_mode(godot::TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
     TitleBarIcon->set_expand_mode(godot::TextureRect::EXPAND_IGNORE_SIZE);
     TitleBarIcon->set_texture(GetWindowControlIconTexture(EWindowControlIcon::CspDiscordRpcGd));
@@ -712,7 +712,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     TitleBarContainer->add_child(TitleBarButton);
 
     MinimizeButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Minimize), "Minimize");
-    SetWindowControlButtonHighlight(MinimizeButton, godot::Color(0.0F, 0.0F, 0.0F, 0.0F));
+    SetWindowControlButtonHighlight(MinimizeButton, godot::Color(0.0f, 0.0f, 0.0f, 0.0f));
     MinimizeButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnMinimizePressed));
     MinimizeButton->connect("mouse_entered",
                             callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered)
@@ -721,7 +721,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     TitleBarContainer->add_child(MinimizeButton);
 
     MaximizeButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Maximize), "Toggle maximize");
-    SetWindowControlButtonHighlight(MaximizeButton, godot::Color(0.0F, 0.0F, 0.0F, 0.0F));
+    SetWindowControlButtonHighlight(MaximizeButton, godot::Color(0.0f, 0.0f, 0.0f, 0.0f));
     MaximizeButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnMaximizePressed));
     MaximizeButton->connect("mouse_entered",
                             callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered)
@@ -730,7 +730,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     TitleBarContainer->add_child(MaximizeButton);
 
     CloseButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Close), "Close");
-    SetWindowControlButtonHighlight(CloseButton, godot::Color(0.0F, 0.0F, 0.0F, 0.0F));
+    SetWindowControlButtonHighlight(CloseButton, godot::Color(0.0f, 0.0f, 0.0f, 0.0f));
     CloseButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnClosePressed));
     CloseButton->connect("mouse_entered",
                          callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseEntered)
@@ -743,7 +743,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     ContentPanel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ContentPanel->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ContentPanel->set_clip_contents(true);
-    ContentPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.16F, 0.17F, 0.22F, 1.0F)));
+    ContentPanel->add_theme_stylebox_override("panel", CreatePanelStyle(godot::Color(0.16f, 0.17f, 0.22f, 1.0f)));
     RootContainer->add_child(ContentPanel);
 
     godot::ScrollContainer* ContentScrollContainer = memnew(godot::ScrollContainer);
@@ -860,52 +860,52 @@ void CspDiscordRpcGdCppMainControl::_ready()
     AddResizeHandle("ResizeTopLeft",
                     godot::DisplayServer::WINDOW_EDGE_TOP_LEFT,
                     godot::Control::CURSOR_FDIAGSIZE,
-                    0.0F,
-                    0.0F,
-                    0.0F,
-                    0.0F,
-                    0.0F,
-                    0.0F,
+                    0.0f,
+                    0.0f,
+                    0.0f,
+                    0.0f,
+                    0.0f,
+                    0.0f,
                     ResizeCornerExtent,
                     ResizeCornerExtent);
     AddResizeHandle("ResizeTop",
                     godot::DisplayServer::WINDOW_EDGE_TOP,
                     godot::Control::CURSOR_VSIZE,
-                    0.0F,
-                    0.0F,
-                    1.0F,
-                    0.0F,
+                    0.0f,
+                    0.0f,
+                    1.0f,
+                    0.0f,
                     ResizeCornerExtent,
-                    0.0F,
+                    0.0f,
                     -ResizeCornerExtent,
                     ResizeBorderThickness);
     AddResizeHandle("ResizeTopRight",
                     godot::DisplayServer::WINDOW_EDGE_TOP_RIGHT,
                     godot::Control::CURSOR_BDIAGSIZE,
-                    1.0F,
-                    0.0F,
-                    1.0F,
-                    0.0F,
+                    1.0f,
+                    0.0f,
+                    1.0f,
+                    0.0f,
                     -ResizeCornerExtent,
-                    0.0F,
-                    0.0F,
+                    0.0f,
+                    0.0f,
                     ResizeCornerExtent);
     AddResizeHandle("ResizeLeft",
                     godot::DisplayServer::WINDOW_EDGE_LEFT,
                     godot::Control::CURSOR_HSIZE,
-                    0.0F,
-                    0.0F,
-                    0.0F,
-                    1.0F,
-                    0.0F,
+                    0.0f,
+                    0.0f,
+                    0.0f,
+                    1.0f,
+                    0.0f,
                     ResizeCornerExtent,
                     ResizeBorderThickness,
                     -ResizeCornerExtent);
     AddResizeHandle("ResizeRight",
                     godot::DisplayServer::WINDOW_EDGE_RIGHT,
                     godot::Control::CURSOR_HSIZE,
-                    1.0F,
-                    0.0F,
+                    1.0f,
+                    0.0f,
                     1.0F,
                     1.0F,
                     -ResizeBorderThickness,
