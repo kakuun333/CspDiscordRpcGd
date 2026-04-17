@@ -1,6 +1,6 @@
-#include "CspDiscordRpcGdCppCloseWindow.h"
 #include "CspDiscordRpcGdCppMainControl.h"
 
+#include "CspDiscordRpcGdCppCloseWindow.h"
 #include "CspDiscordRpcGdCppWorkData.h"
 #include "CspDiscordRpcGdCppWorksWindow.h"
 #include "CspDiscordRpcService.h"
@@ -18,10 +18,11 @@
 #include "godot_cpp/classes/label.hpp"
 #include "godot_cpp/classes/line_edit.hpp"
 #include "godot_cpp/classes/margin_container.hpp"
-#include "godot_cpp/classes/os.hpp"
 #include "godot_cpp/classes/option_button.hpp"
+#include "godot_cpp/classes/os.hpp"
 #include "godot_cpp/classes/panel_container.hpp"
 #include "godot_cpp/classes/popup_menu.hpp"
+#include "godot_cpp/classes/project_settings.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/scroll_container.hpp"
 #include "godot_cpp/classes/status_indicator.hpp"
@@ -52,8 +53,8 @@
 #include <vector>
 
 #ifdef _WIN32
-#define NOMINMAX
-#include <windows.h>
+    #define NOMINMAX
+    #include <windows.h>
 #endif
 
 namespace
@@ -1329,10 +1330,10 @@ void CspDiscordRpcGdCppMainControl::AddPropertyRow(godot::GridContainer* GridCon
 }
 
 godot::GridContainer* CspDiscordRpcGdCppMainControl::CreateCollapsiblePropertyGroup(godot::VBoxContainer* ParentContainer,
-                                                                                     const godot::String& Name,
-                                                                                     const godot::String& Title,
-                                                                                     bool bExpandedByDefault,
-                                                                                     const godot::String& WarningTooltipText)
+                                                                                    const godot::String& Name,
+                                                                                    const godot::String& Title,
+                                                                                    bool bExpandedByDefault,
+                                                                                    const godot::String& WarningTooltipText)
 {
     godot::VBoxContainer* GroupContainer = memnew(godot::VBoxContainer);
     GroupContainer->set_name(Name);
