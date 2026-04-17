@@ -816,7 +816,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
 
     godot::GridContainer* SmallImageGroupGridContainer = CreateCollapsiblePropertyGroup(PropertySectionContainer, "SmallImageGroup", "Small Image", true, {});
     SmallImageKeyLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageKey");
-    SmallImageKeyLineEdit->set_placeholder("small_asset_key");
+    SmallImageKeyLineEdit->set_placeholder("https://example/image.png");
     SmallImageKeyLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
     AddPropertyRow(SmallImageGroupGridContainer, "Small Image Key", SmallImageKeyLineEdit);
 
