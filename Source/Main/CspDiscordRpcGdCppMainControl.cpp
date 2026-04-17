@@ -60,6 +60,8 @@ enum class EWindowControlIcon : uint8_t
     Maximize,
     Restore,
     Close,
+    FoldExpanded,
+    FoldCollapsed,
 };
 
 [[nodiscard]] godot::String GetEmbeddedSvgContent(EWindowControlIcon Icon)
@@ -74,6 +76,10 @@ enum class EWindowControlIcon : uint8_t
             return CspDiscordRpcGdCpp::EmbeddedSvgResources::ActionCopy;
         case EWindowControlIcon::Close:
             return CspDiscordRpcGdCpp::EmbeddedSvgResources::Close;
+        case EWindowControlIcon::FoldExpanded:
+            return CspDiscordRpcGdCpp::EmbeddedSvgResources::CodeFoldDownArrow;
+        case EWindowControlIcon::FoldCollapsed:
+            return CspDiscordRpcGdCpp::EmbeddedSvgResources::CodeFoldedRightArrow;
         default:
             return {};
     }
@@ -104,6 +110,8 @@ enum class EWindowControlIcon : uint8_t
     static godot::Ref<godot::Texture2D> MaximizeIconTexture;
     static godot::Ref<godot::Texture2D> RestoreIconTexture;
     static godot::Ref<godot::Texture2D> CloseIconTexture;
+    static godot::Ref<godot::Texture2D> FoldExpandedIconTexture;
+    static godot::Ref<godot::Texture2D> FoldCollapsedIconTexture;
 
     godot::Ref<godot::Texture2D>* IconTexture = nullptr;
 
@@ -120,6 +128,12 @@ enum class EWindowControlIcon : uint8_t
             break;
         case EWindowControlIcon::Close:
             IconTexture = &CloseIconTexture;
+            break;
+        case EWindowControlIcon::FoldExpanded:
+            IconTexture = &FoldExpandedIconTexture;
+            break;
+        case EWindowControlIcon::FoldCollapsed:
+            IconTexture = &FoldCollapsedIconTexture;
             break;
         default:
             return MinimizeIconTexture;
@@ -497,6 +511,7 @@ void CspDiscordRpcGdCppMainControl::_bind_methods()
     godot::ClassDB::bind_method(godot::D_METHOD("on_resize_handle_gui_input", "event", "resize_edge"), &CspDiscordRpcGdCppMainControl::OnResizeHandleGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_choose_csp_work_pressed"), &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed);
     godot::ClassDB::bind_method(godot::D_METHOD("on_csp_work_chosen", "work_name", "work_path"), &CspDiscordRpcGdCppMainControl::OnCspWorkChosen);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_collapsible_property_group_toggled", "toggle_button", "content_container"), &CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled);
     godot::ClassDB::bind_method(godot::D_METHOD("on_update_presence_pressed"), &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed);
 }
 
@@ -580,13 +595,23 @@ void CspDiscordRpcGdCppMainControl::_ready()
     ContentMargin->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ContentScrollContainer->add_child(ContentMargin);
 
+    godot::VBoxContainer* PropertySectionContainer = memnew(godot::VBoxContainer);
+    PropertySectionContainer->set_name("PropertySectionContainer");
+    PropertySectionContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    PropertySectionContainer->add_theme_constant_override("separation", 12);
+    ContentMargin->add_child(PropertySectionContainer);
+
     godot::GridContainer* PropertyGridContainer = memnew(godot::GridContainer);
     PropertyGridContainer->set_name("PropertyGridContainer");
     PropertyGridContainer->set_columns(2);
     PropertyGridContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     PropertyGridContainer->add_theme_constant_override("h_separation", 12);
     PropertyGridContainer->add_theme_constant_override("v_separation", 12);
-    ContentMargin->add_child(PropertyGridContainer);
+    PropertySectionContainer->add_child(PropertyGridContainer);
+
+    StatusLabel = CreatePropertyLabel("Discord RPC is disabled.");
+    StatusLabel->set_name("StatusLabel");
+    AddPropertyRow(PropertyGridContainer, "Status", StatusLabel);
 
     DiscordRichPresenceCheckButton = CreateNamedControl<godot::CheckButton>("DiscordRichPresence");
     DiscordRichPresenceCheckButton->set_text("");
@@ -598,38 +623,37 @@ void CspDiscordRpcGdCppMainControl::_ready()
     ChooseCSPWorkButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed));
     AddPropertyRow(PropertyGridContainer, "Choose CSP Work", ChooseCSPWorkButton);
 
+    godot::GridContainer* SmallImageGroupGridContainer = CreateCollapsiblePropertyGroup(PropertySectionContainer, "SmallImageGroup", "Small Image", true);
     SmallImageKeyLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageKey");
     SmallImageKeyLineEdit->set_placeholder("small_asset_key");
-    AddPropertyRow(PropertyGridContainer, "Small Image Key", SmallImageKeyLineEdit);
+    AddPropertyRow(SmallImageGroupGridContainer, "Small Image Key", SmallImageKeyLineEdit);
 
     SmallImageTextLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageText");
     SmallImageTextLineEdit->set_placeholder("Drawing something");
-    AddPropertyRow(PropertyGridContainer, "Small Image Text", SmallImageTextLineEdit);
+    AddPropertyRow(SmallImageGroupGridContainer, "Small Image Text", SmallImageTextLineEdit);
 
+    godot::GridContainer* Button1GroupGridContainer = CreateCollapsiblePropertyGroup(PropertySectionContainer, "Button1Group", "Button 1", true);
     Button1LabelLineEdit = CreateNamedControl<godot::LineEdit>("Button1Label");
     Button1LabelLineEdit->set_placeholder("Open My Website");
-    AddPropertyRow(PropertyGridContainer, "Button1 Label", Button1LabelLineEdit);
+    AddPropertyRow(Button1GroupGridContainer, "Button1 Label", Button1LabelLineEdit);
 
     Button1UrlLineEdit = CreateNamedControl<godot::LineEdit>("Button1Url");
     Button1UrlLineEdit->set_placeholder("https://example.com");
-    AddPropertyRow(PropertyGridContainer, "Button1 URL", Button1UrlLineEdit);
+    AddPropertyRow(Button1GroupGridContainer, "Button1 URL", Button1UrlLineEdit);
 
+    godot::GridContainer* Button2GroupGridContainer = CreateCollapsiblePropertyGroup(PropertySectionContainer, "Button2Group", "Button 2", true);
     Button2LabelLineEdit = CreateNamedControl<godot::LineEdit>("Button2Label");
     Button2LabelLineEdit->set_placeholder("Open My Website");
-    AddPropertyRow(PropertyGridContainer, "Button2 Label", Button2LabelLineEdit);
+    AddPropertyRow(Button2GroupGridContainer, "Button2 Label", Button2LabelLineEdit);
 
     Button2UrlLineEdit = CreateNamedControl<godot::LineEdit>("Button2Url");
     Button2UrlLineEdit->set_placeholder("https://example.com");
-    AddPropertyRow(PropertyGridContainer, "Button2 URL", Button2UrlLineEdit);
+    AddPropertyRow(Button2GroupGridContainer, "Button2 URL", Button2UrlLineEdit);
 
     UpdatePresenceButton = CreateNamedControl<godot::Button>("UpdatePresence");
     UpdatePresenceButton->set_text("Update");
     UpdatePresenceButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed));
     AddPropertyRow(PropertyGridContainer, "Update Presence", UpdatePresenceButton);
-
-    StatusLabel = CreatePropertyLabel("Discord RPC is disabled.");
-    StatusLabel->set_name("StatusLabel");
-    AddPropertyRow(PropertyGridContainer, "Status", StatusLabel);
 
     AddResizeHandle("ResizeTopLeft",
                     godot::DisplayServer::WINDOW_EDGE_TOP_LEFT,
@@ -807,6 +831,58 @@ void CspDiscordRpcGdCppMainControl::AddPropertyRow(godot::GridContainer* GridCon
 {
     GridContainer->add_child(CreatePropertyLabel(LabelText));
     GridContainer->add_child(EditorControl);
+}
+
+godot::GridContainer* CspDiscordRpcGdCppMainControl::CreateCollapsiblePropertyGroup(godot::VBoxContainer* ParentContainer,
+                                                                                     const godot::String& Name,
+                                                                                     const godot::String& Title,
+                                                                                     bool bExpandedByDefault)
+{
+    godot::VBoxContainer* GroupContainer = memnew(godot::VBoxContainer);
+    GroupContainer->set_name(Name);
+    GroupContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    GroupContainer->add_theme_constant_override("separation", 8);
+    ParentContainer->add_child(GroupContainer);
+
+    godot::HBoxContainer* HeaderContainer = memnew(godot::HBoxContainer);
+    HeaderContainer->set_name(godot::String(Name) + "Header");
+    HeaderContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    HeaderContainer->set_alignment(godot::BoxContainer::ALIGNMENT_BEGIN);
+    HeaderContainer->add_theme_constant_override("separation", 8);
+    GroupContainer->add_child(HeaderContainer);
+
+    godot::Button* ToggleButton = memnew(godot::Button);
+    ToggleButton->set_name(godot::String(Name) + "ToggleButton");
+    ToggleButton->set_flat(true);
+    ToggleButton->set_focus_mode(godot::Control::FOCUS_NONE);
+    ToggleButton->set_custom_minimum_size(godot::Vector2(20.0F, 20.0F));
+    ToggleButton->set_button_icon(GetWindowControlIconTexture(bExpandedByDefault ? EWindowControlIcon::FoldExpanded : EWindowControlIcon::FoldCollapsed));
+    ToggleButton->set_tooltip_text(bExpandedByDefault ? godot::String("Collapse") : godot::String("Expand"));
+    HeaderContainer->add_child(ToggleButton);
+
+    godot::Label* TitleLabel = CreatePropertyLabel(Title);
+    TitleLabel->set_name(godot::String(Name) + "TitleLabel");
+    TitleLabel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    TitleLabel->set_vertical_alignment(godot::VERTICAL_ALIGNMENT_CENTER);
+    HeaderContainer->add_child(TitleLabel);
+
+    godot::MarginContainer* ContentMarginContainer = memnew(godot::MarginContainer);
+    ContentMarginContainer->set_name(godot::String(Name) + "ContentMargin");
+    ContentMarginContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    ContentMarginContainer->add_theme_constant_override("margin_left", 42);
+    ContentMarginContainer->set_visible(bExpandedByDefault);
+    GroupContainer->add_child(ContentMarginContainer);
+
+    godot::GridContainer* ContentContainer = memnew(godot::GridContainer);
+    ContentContainer->set_name(godot::String(Name) + "Content");
+    ContentContainer->set_columns(2);
+    ContentContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    ContentContainer->add_theme_constant_override("h_separation", 12);
+    ContentContainer->add_theme_constant_override("v_separation", 12);
+    ContentMarginContainer->add_child(ContentContainer);
+
+    ToggleButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled).bind(ToggleButton, ContentMarginContainer));
+    return ContentContainer;
 }
 
 void CspDiscordRpcGdCppMainControl::AddResizeHandle(const godot::String& Name,
@@ -991,6 +1067,19 @@ void CspDiscordRpcGdCppMainControl::OnCspWorkChosen(const godot::String& WorkNam
 void CspDiscordRpcGdCppMainControl::OnWorksWindowTreeExited()
 {
     WorksWindow = nullptr;
+}
+
+void CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled(godot::Button* ToggleButton, godot::Control* ContentContainer)
+{
+    if (ToggleButton == nullptr || ContentContainer == nullptr)
+    {
+        return;
+    }
+
+    const bool bShouldExpand = !ContentContainer->is_visible();
+    ContentContainer->set_visible(bShouldExpand);
+    ToggleButton->set_button_icon(GetWindowControlIconTexture(bShouldExpand ? EWindowControlIcon::FoldExpanded : EWindowControlIcon::FoldCollapsed));
+    ToggleButton->set_tooltip_text(bShouldExpand ? godot::String("Collapse") : godot::String("Expand"));
 }
 
 void CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled(bool bToggled)

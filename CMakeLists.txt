@@ -55,14 +55,15 @@ set(GLAZE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/glaze")
 set(RESOURCE_SVG_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/ActionCopy.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Close.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CodeFoldDownArrow.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CodeFoldedRightArrow.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CurveConstant.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/PanelContainer.svg"
 )
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${RESOURCE_SVG_FILES})
 
 set(GENERATED_SVG_DIR "${CMAKE_CURRENT_BINARY_DIR}/Generated")
-set(GENERATED_SVG_HEADER "${GENERATED_SVG_DIR}/EmbeddedSvgResources.h"
-        Source/Main/CspDiscordRpcGdCppConstants.h)
+set(GENERATED_SVG_HEADER "${GENERATED_SVG_DIR}/EmbeddedSvgResources.h")
 
 file(MAKE_DIRECTORY "${GENERATED_SVG_DIR}")
 file(WRITE "${GENERATED_SVG_HEADER}" "#pragma once\n\nnamespace CspDiscordRpcGdCpp::EmbeddedSvgResources\n{\n")

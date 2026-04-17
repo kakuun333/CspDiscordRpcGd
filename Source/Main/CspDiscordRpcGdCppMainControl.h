@@ -16,6 +16,7 @@ class InputEvent;
 class Label;
 class LineEdit;
 class Texture2D;
+class VBoxContainer;
 
 } // namespace godot
 
@@ -45,6 +46,10 @@ private:
     void RestoreWindowStateForTitleBarDrag(const godot::Vector2& LocalMousePosition) const;
     void UpdateMaximizeButtonIcon();
     void AddPropertyRow(godot::GridContainer* GridContainer, const godot::String& LabelText, godot::Control* EditorControl);
+    godot::GridContainer* CreateCollapsiblePropertyGroup(godot::VBoxContainer* ParentContainer,
+                                                         const godot::String& Name,
+                                                         const godot::String& Title,
+                                                         bool bExpandedByDefault);
     void AddResizeHandle(const godot::String& Name,
                          godot::DisplayServer::WindowResizeEdge ResizeEdge,
                          godot::Control::CursorShape CursorShape,
@@ -67,6 +72,7 @@ private:
     void OnChooseCspWorkPressed();
     void OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath);
     void OnWorksWindowTreeExited();
+    void OnCollapsiblePropertyGroupToggled(godot::Button* ToggleButton, godot::Control* ContentContainer);
     void OnDiscordRichPresenceToggled(bool bToggled);
     void OnUpdatePresencePressed();
 
