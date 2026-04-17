@@ -47,9 +47,9 @@ private:
 
 private:
     std::vector<CspDiscordRpcGdCppWorkData> Works;
-    godot::VBoxContainer* RootContainer = nullptr;
-    godot::GridContainer* WorkGridContainer = nullptr;
-    godot::Button* ChooseButton = nullptr;
+    godot::VBoxContainer* RootContainer{ nullptr };
+    godot::GridContainer* WorkGridContainer{ nullptr };
+    godot::Button* ChooseButton{ nullptr };
     godot::String SelectedWorkName;
     godot::String SelectedWorkPath;
 };

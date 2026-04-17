@@ -113,7 +113,7 @@ void CspDiscordRpcService::UpdatePresence(const DiscordRichPresenceData& Presenc
     discord::Presence& Presence = discord::RPCManager::get().getPresence();
     Presence.clear();
     Presence.setActivityType(discord::ActivityType::Game);
-    Presence.setStatusDisplayType(discord::StatusDisplayType::State);
+    Presence.setStatusDisplayType(discord::StatusDisplayType::Name);
     Presence.setInstance(false);
 
     const godot::String State = Trimmed(PresenceData.State);
@@ -122,8 +122,10 @@ void CspDiscordRpcService::UpdatePresence(const DiscordRichPresenceData& Presenc
     const godot::String LargeImageText = Trimmed(PresenceData.LargeImageText);
     const godot::String SmallImageKey = Trimmed(PresenceData.SmallImageKey);
     const godot::String SmallImageText = Trimmed(PresenceData.SmallImageText);
-    const godot::String ButtonLabel = Trimmed(PresenceData.ButtonLabel);
-    const godot::String ButtonUrl = NormalizeButtonUrl(PresenceData.ButtonUrl);
+    const godot::String Button1Label = Trimmed(PresenceData.Button1Label);
+    const godot::String Button1Url = NormalizeButtonUrl(PresenceData.Button1Url);
+    const godot::String Button2Label = Trimmed(PresenceData.Button2Label);
+    const godot::String Button2Url = NormalizeButtonUrl(PresenceData.Button2Url);
 
     if (!State.is_empty())
     {
@@ -160,9 +162,14 @@ void CspDiscordRpcService::UpdatePresence(const DiscordRichPresenceData& Presenc
         Presence.setSmallImageText(ToStdString(SmallImageText));
     }
 
-    if (!ButtonLabel.is_empty() && !ButtonUrl.is_empty())
+    if (!Button1Label.is_empty() && !Button1Url.is_empty())
     {
-        Presence.setButton1(ToStdString(ButtonLabel), ToStdString(ButtonUrl));
+        Presence.setButton1(ToStdString(Button1Label), ToStdString(Button1Url));
+    }
+
+    if (!Button2Label.is_empty() && !Button2Url.is_empty())
+    {
+        Presence.setButton2(ToStdString(Button2Label), ToStdString(Button2Url));
     }
 
     Presence.refresh();

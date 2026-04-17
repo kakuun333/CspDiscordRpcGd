@@ -15,8 +15,10 @@ struct DiscordRichPresenceData
     godot::String LargeImageText;
     godot::String SmallImageKey;
     godot::String SmallImageText;
-    godot::String ButtonLabel;
-    godot::String ButtonUrl;
+    godot::String Button1Label;
+    godot::String Button1Url;
+    godot::String Button2Label;
+    godot::String Button2Url;
     int64_t StartTimestamp = 0;
 };
 
@@ -40,7 +42,7 @@ private:
 
 private:
     godot::String ClientId;
-    bool bInitialized = false;
+    bool bInitialized{ false };
 };
 
 } // namespace CspDiscordRpcGdCpp

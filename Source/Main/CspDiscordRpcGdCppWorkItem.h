@@ -41,10 +41,10 @@ private:
 
 private:
     CspDiscordRpcGdCppWorkData WorkData;
-    godot::PanelContainer* ThumbnailPanel = nullptr;
-    godot::TextureRect* ThumbnailTextureRect = nullptr;
-    godot::Label* WorkNameLabel = nullptr;
-    bool bSelected = false;
+    godot::PanelContainer* ThumbnailPanel{ nullptr };
+    godot::TextureRect* ThumbnailTextureRect{ nullptr };
+    godot::Label* WorkNameLabel{ nullptr };
+    bool bSelected{ false };
 };
 
 } // namespace CspDiscordRpcGdCpp

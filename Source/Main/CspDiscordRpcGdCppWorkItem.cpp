@@ -136,7 +136,7 @@ void CspDiscordRpcGdCppWorkItem::RefreshUI()
 
     ThumbnailPanel->add_theme_stylebox_override("panel", CreateWorkItemStyle(bSelected));
     ThumbnailTextureRect->set_texture(LoadTextureFromPath(WorkData.ThumbnailPath));
-    WorkNameLabel->set_text(WorkData.Name.is_empty() ? godot::String::utf8("Untitled Work") : godot::String::utf8(WorkData.Name.ascii()));
+    WorkNameLabel->set_text(WorkData.Name.is_empty() ? godot::String("Untitled Work") : WorkData.Name);
     WorkNameLabel->set_modulate(bSelected ? godot::Color(1.0F, 1.0F, 1.0F, 1.0F) : godot::Color(0.92F, 0.94F, 0.98F, 1.0F));
 }
 

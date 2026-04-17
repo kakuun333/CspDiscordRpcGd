@@ -70,22 +70,25 @@ private:
     void OnDiscordRichPresenceToggled(bool bToggled);
     void OnUpdatePresencePressed();
 
-    godot::Button* MaximizeButton = nullptr;
-    godot::CheckButton* DiscordRichPresenceCheckButton = nullptr;
-    godot::Button* ChooseCSPWorkButton = nullptr;
-    godot::Button* UpdatePresenceButton = nullptr;
-    godot::LineEdit* SmallImageKeyLineEdit = nullptr;
-    godot::LineEdit* SmallImageTextLineEdit = nullptr;
-    godot::LineEdit* ButtonLabelLineEdit = nullptr;
-    godot::LineEdit* ButtonUrlLineEdit = nullptr;
-    godot::Label* StatusLabel = nullptr;
-    CspDiscordRpcGdCppWorksWindow* WorksWindow = nullptr;
+    godot::Button* MaximizeButton{ nullptr };
+    godot::CheckButton* DiscordRichPresenceCheckButton{ nullptr };
+    godot::Button* ChooseCSPWorkButton{ nullptr };
+    godot::Button* UpdatePresenceButton{ nullptr };
+    godot::LineEdit* SmallImageKeyLineEdit{ nullptr };
+    godot::LineEdit* SmallImageTextLineEdit{ nullptr };
+    godot::LineEdit* Button1LabelLineEdit{ nullptr };
+    godot::LineEdit* Button1UrlLineEdit{ nullptr };
+    godot::LineEdit* Button2LabelLineEdit{ nullptr };
+    godot::LineEdit* Button2UrlLineEdit{ nullptr };
+    godot::Label* StatusLabel{ nullptr };
+    CspDiscordRpcGdCppWorksWindow* WorksWindow{ nullptr };
     godot::Vector2i RestoreWindowPosition;
     godot::Vector2i RestoreWindowSize;
+    CspDiscordRpcGdCppWorkData SelectedCspWorkData;
     godot::String SelectedCSPWorkPath;
-    int64_t PresenceStartTimestamp = 0;
-    bool bHasRestoreWindowState = false;
-    bool bIsWindowMaximized = false;
+    int64_t PresenceStartTimestamp{ 0 };
+    bool bHasRestoreWindowState{ false };
+    bool bIsWindowMaximized{ false };
 };
 
 } // namespace CspDiscordRpcGdCpp

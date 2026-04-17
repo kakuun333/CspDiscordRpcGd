@@ -13,10 +13,10 @@
 #include "godot_cpp/classes/image_texture.hpp"
 #include "godot_cpp/classes/input_event.hpp"
 #include "godot_cpp/classes/input_event_mouse_button.hpp"
+#include "godot_cpp/classes/json.hpp"
 #include "godot_cpp/classes/label.hpp"
 #include "godot_cpp/classes/line_edit.hpp"
 #include "godot_cpp/classes/margin_container.hpp"
-#include "godot_cpp/classes/json.hpp"
 #include "godot_cpp/classes/os.hpp"
 #include "godot_cpp/classes/panel_container.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
@@ -25,22 +25,23 @@
 #include "godot_cpp/classes/v_box_container.hpp"
 #include "godot_cpp/classes/viewport.hpp"
 #include "godot_cpp/classes/window.hpp"
+#include "godot_cpp/classes/xml_parser.hpp"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/core/error_macros.hpp"
 #include "godot_cpp/core/memory.hpp"
 #include "godot_cpp/core/object.hpp"
 #include "godot_cpp/variant/callable.hpp"
 #include "godot_cpp/variant/color.hpp"
-#include "godot_cpp/variant/packed_byte_array.hpp"
 #include "godot_cpp/variant/dictionary.hpp"
+#include "godot_cpp/variant/packed_byte_array.hpp"
 #include "godot_cpp/variant/vector2.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
-#include <iterator>
 #include <initializer_list>
+#include <iterator>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -164,20 +165,35 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
 
 [[nodiscard]] std::filesystem::path ToPath(const godot::String& Value)
 {
-    const godot::PackedByteArray WideCharBuffer = Value.to_wchar_buffer();
-    if (WideCharBuffer.is_empty())
+    if (Value.is_empty())
     {
         return {};
     }
 
-    const wchar_t* WideChars = reinterpret_cast<const wchar_t*>(WideCharBuffer.ptr());
-    return std::filesystem::path(WideChars);
-}
+    const godot::PackedByteArray Utf16Buffer = Value.to_utf16_buffer();
+    if (Utf16Buffer.is_empty())
+    {
+        return {};
+    }
 
-[[nodiscard]] bool HasSupportedImageExtension(const std::filesystem::path& Path)
-{
-    const std::wstring Extension = Path.extension().wstring();
-    return Extension == L".png" || Extension == L".jpg" || Extension == L".jpeg" || Extension == L".webp" || Extension == L".bmp";
+    const char16_t* Utf16Chars = reinterpret_cast<const char16_t*>(Utf16Buffer.ptr());
+    const std::size_t Utf16CharCount = static_cast<std::size_t>(Utf16Buffer.size()) / sizeof(char16_t);
+
+    std::wstring WideString;
+    WideString.reserve(Utf16CharCount);
+
+    for (std::size_t CharIndex = 0; CharIndex < Utf16CharCount; ++CharIndex)
+    {
+        const char16_t Character = Utf16Chars[CharIndex];
+        if (Character == u'\0')
+        {
+            break;
+        }
+
+        WideString.push_back(static_cast<wchar_t>(Character));
+    }
+
+    return std::filesystem::path(WideString);
 }
 
 [[nodiscard]] bool HasSupportedWorkExtension(const std::filesystem::path& Path)
@@ -186,96 +202,40 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
     return Extension == L".clip" || Extension == L".cmc" || Extension == L".lip";
 }
 
-[[nodiscard]] std::string ReadTextFile(const std::filesystem::path& FilePath)
+[[nodiscard]] bool MatchesXmlPath(const std::vector<godot::String>& CurrentPath, std::initializer_list<const char*> ExpectedPath)
 {
-    std::ifstream InputStream(FilePath, std::ios::binary);
-    if (!InputStream.is_open())
+    if (CurrentPath.size() != ExpectedPath.size())
     {
-        return {};
+        return false;
     }
 
-    return {std::istreambuf_iterator<char>(InputStream), std::istreambuf_iterator<char>()};
-}
-
-[[nodiscard]] std::string ExtractTagValue(const std::string& Text, const std::string& TagName)
-{
-    const std::string StartTag = "<" + TagName + ">";
-    const std::string EndTag = "</" + TagName + ">";
-
-    const std::size_t StartIndex = Text.find(StartTag);
-    if (StartIndex == std::string::npos)
+    std::size_t PathIndex = 0;
+    for (const char* ExpectedSegment : ExpectedPath)
     {
-        return {};
-    }
-
-    const std::size_t ValueStartIndex = StartIndex + StartTag.size();
-    const std::size_t EndIndex = Text.find(EndTag, ValueStartIndex);
-    if (EndIndex == std::string::npos || EndIndex <= ValueStartIndex)
-    {
-        return {};
-    }
-
-    return Text.substr(ValueStartIndex, EndIndex - ValueStartIndex);
-}
-
-[[nodiscard]] std::string ExtractAttributeValue(const std::string& Text, const std::string& ElementName, const std::string& AttributeName)
-{
-    const std::string ElementToken = "<" + ElementName;
-    const std::size_t ElementIndex = Text.find(ElementToken);
-    if (ElementIndex == std::string::npos)
-    {
-        return {};
-    }
-
-    const std::size_t ElementEndIndex = Text.find('>', ElementIndex);
-    if (ElementEndIndex == std::string::npos)
-    {
-        return {};
-    }
-
-    const std::string AttributeToken = AttributeName + "=\"";
-    const std::size_t AttributeIndex = Text.find(AttributeToken, ElementIndex);
-    if (AttributeIndex == std::string::npos || AttributeIndex > ElementEndIndex)
-    {
-        return {};
-    }
-
-    const std::size_t ValueStartIndex = AttributeIndex + AttributeToken.size();
-    const std::size_t ValueEndIndex = Text.find('"', ValueStartIndex);
-    if (ValueEndIndex == std::string::npos || ValueEndIndex <= ValueStartIndex)
-    {
-        return {};
-    }
-
-    return Text.substr(ValueStartIndex, ValueEndIndex - ValueStartIndex);
-}
-
-[[nodiscard]] std::string ExtractPngThumbnailRelativePath(const std::string& CatalogXmlContent)
-{
-    std::size_t SearchStartIndex = 0;
-
-    while (true)
-    {
-        const std::size_t FileStartIndex = CatalogXmlContent.find("<file", SearchStartIndex);
-        if (FileStartIndex == std::string::npos)
+        if (CurrentPath[PathIndex] != godot::String(ExpectedSegment))
         {
-            return {};
+            return false;
         }
 
-        const std::size_t FileEndIndex = CatalogXmlContent.find("</file>", FileStartIndex);
-        if (FileEndIndex == std::string::npos)
-        {
-            return {};
-        }
-
-        const std::string FileBlock = CatalogXmlContent.substr(FileStartIndex, FileEndIndex - FileStartIndex);
-        if (FileBlock.find("image/png") != std::string::npos)
-        {
-            return ExtractTagValue(FileBlock, "path");
-        }
-
-        SearchStartIndex = FileEndIndex + 7;
+        ++PathIndex;
     }
+
+    return true;
+}
+
+[[nodiscard]] godot::String ReadXmlTextValue(const godot::Ref<godot::XMLParser>& XmlParser)
+{
+    if (!XmlParser.is_valid())
+    {
+        return {};
+    }
+
+    if (XmlParser->read() != godot::OK)
+    {
+        return {};
+    }
+
+    return XmlParser->get_node_type() == godot::XMLParser::NODE_TEXT ? XmlParser->get_node_data() : godot::String();
 }
 
 [[nodiscard]] godot::String ConvertMillisecondsToDHMS(int64_t Milliseconds)
@@ -285,23 +245,7 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
     const int64_t Hours = (TotalSeconds % 86400) / 3600;
     const int64_t Minutes = (TotalSeconds % 3600) / 60;
     const int64_t Seconds = TotalSeconds % 60;
-
-    if (Days > 0)
-    {
-        return godot::vformat("%dd %02dh %02dm %02ds", Days, Hours, Minutes, Seconds);
-    }
-
-    if (Hours > 0)
-    {
-        return godot::vformat("%02dh %02dm %02ds", Hours, Minutes, Seconds);
-    }
-
-    if (Minutes > 0)
-    {
-        return godot::vformat("%02dm %02ds", Minutes, Seconds);
-    }
-
-    return godot::vformat("%02ds", Seconds);
+    return godot::vformat("%02d:%02d:%02d:%02d", Days, Hours, Minutes, Seconds);
 }
 
 [[nodiscard]] CspDiscordRpcGdCppWorkData GetCspWorkCacheData(const std::filesystem::path& CspWorkCachePath)
@@ -318,29 +262,62 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
         return WorkData;
     }
 
-    const std::string CatalogXmlContent = ReadTextFile(CatalogPath);
-    if (CatalogXmlContent.empty())
+    godot::Ref<godot::XMLParser> XmlParser;
+    XmlParser.instantiate();
+    if (XmlParser->open(ToGodotString(CatalogPath)) != godot::OK)
     {
         return WorkData;
     }
 
-    const std::string WorkName = ExtractTagValue(CatalogXmlContent, "name");
-    const std::string CspVersion = ExtractAttributeValue(CatalogXmlContent, "tool", "version");
-    const std::string ThumbnailRelativePath = ExtractPngThumbnailRelativePath(CatalogXmlContent);
+    std::vector<godot::String> CurrentXmlPath;
+    bool bInsidePngFile = false;
 
-    if (!WorkName.empty())
+    while (XmlParser->read() == godot::OK)
     {
-        WorkData.Name = godot::String(WorkName.c_str());
-    }
+        const godot::XMLParser::NodeType NodeType = XmlParser->get_node_type();
+        if (NodeType == godot::XMLParser::NODE_ELEMENT)
+        {
+            const godot::String NodeName = XmlParser->get_node_name();
+            CurrentXmlPath.push_back(NodeName);
 
-    if (!CspVersion.empty())
-    {
-        WorkData.CspVersion = godot::String(CspVersion.c_str());
-    }
+            if (MatchesXmlPath(CurrentXmlPath, { "archive", "catalog", "name" }) && WorkData.Name.is_empty())
+            {
+                WorkData.Name = ReadXmlTextValue(XmlParser);
+            }
+            else if (MatchesXmlPath(CurrentXmlPath, { "archive", "catalog", "groups", "group", "tool" }) && WorkData.CspVersion.is_empty())
+            {
+                WorkData.CspVersion = XmlParser->get_named_attribute_value_safe("version");
+            }
+            else if (MatchesXmlPath(CurrentXmlPath, { "archive", "files", "file" }))
+            {
+                bInsidePngFile = XmlParser->get_named_attribute_value_safe("mime").contains("image/png");
+            }
+            else if (bInsidePngFile && MatchesXmlPath(CurrentXmlPath, { "archive", "files", "file", "path" }) && WorkData.ThumbnailPath.is_empty())
+            {
+                const godot::String RelativeThumbnailPath = ReadXmlTextValue(XmlParser);
+                if (!RelativeThumbnailPath.is_empty())
+                {
+                    WorkData.ThumbnailPath = ToGodotString(CspWorkCachePath / ToPath(RelativeThumbnailPath));
+                }
+            }
 
-    if (!ThumbnailRelativePath.empty())
-    {
-        WorkData.ThumbnailPath = ToGodotString(CspWorkCachePath / std::filesystem::path(ThumbnailRelativePath));
+            if (XmlParser->is_empty() && !CurrentXmlPath.empty())
+            {
+                CurrentXmlPath.pop_back();
+            }
+        }
+        else if (NodeType == godot::XMLParser::NODE_ELEMENT_END)
+        {
+            if (XmlParser->get_node_name() == godot::String("file"))
+            {
+                bInsidePngFile = false;
+            }
+
+            if (!CurrentXmlPath.empty())
+            {
+                CurrentXmlPath.pop_back();
+            }
+        }
     }
 
     const std::filesystem::path WorkingTimePath = CspWorkCachePath / "workingTime.json";
@@ -349,7 +326,7 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
         std::ifstream WorkingTimeStream(WorkingTimePath, std::ios::binary);
         if (WorkingTimeStream.is_open())
         {
-            const std::string WorkingTimeJson {std::istreambuf_iterator<char>(WorkingTimeStream), std::istreambuf_iterator<char>()};
+            const std::string WorkingTimeJson{ std::istreambuf_iterator<char>(WorkingTimeStream), std::istreambuf_iterator<char>() };
             const godot::Variant ParsedJson = godot::JSON::parse_string(godot::String(WorkingTimeJson.c_str()));
             if (ParsedJson.get_type() == godot::Variant::DICTIONARY)
             {
@@ -479,8 +456,7 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
                     continue;
                 }
 
-                const std::wstring EntryKey = EntryPath.lexically_normal().wstring();
-                if (!SeenPaths.insert(EntryKey).second)
+                if (const std::wstring EntryKey = EntryPath.lexically_normal().wstring(); !SeenPaths.insert(EntryKey).second)
                 {
                     continue;
                 }
@@ -504,7 +480,6 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
     {
         godot::UtilityFunctions::print("Exception: ", e.what());
     }
-
 
 
     return Works;
@@ -631,13 +606,21 @@ void CspDiscordRpcGdCppMainControl::_ready()
     SmallImageTextLineEdit->set_placeholder("Drawing something");
     AddPropertyRow(PropertyGridContainer, "Small Image Text", SmallImageTextLineEdit);
 
-    ButtonLabelLineEdit = CreateNamedControl<godot::LineEdit>("ButtonLabel");
-    ButtonLabelLineEdit->set_placeholder("Open My Website");
-    AddPropertyRow(PropertyGridContainer, "Button Label", ButtonLabelLineEdit);
+    Button1LabelLineEdit = CreateNamedControl<godot::LineEdit>("Button1Label");
+    Button1LabelLineEdit->set_placeholder("Open My Website");
+    AddPropertyRow(PropertyGridContainer, "Button1 Label", Button1LabelLineEdit);
 
-    ButtonUrlLineEdit = CreateNamedControl<godot::LineEdit>("ButtonUrl");
-    ButtonUrlLineEdit->set_placeholder("https://example.com");
-    AddPropertyRow(PropertyGridContainer, "Button URL", ButtonUrlLineEdit);
+    Button1UrlLineEdit = CreateNamedControl<godot::LineEdit>("Button1Url");
+    Button1UrlLineEdit->set_placeholder("https://example.com");
+    AddPropertyRow(PropertyGridContainer, "Button1 URL", Button1UrlLineEdit);
+
+    Button2LabelLineEdit = CreateNamedControl<godot::LineEdit>("Button2Label");
+    Button2LabelLineEdit->set_placeholder("Open My Website");
+    AddPropertyRow(PropertyGridContainer, "Button2 Label", Button2LabelLineEdit);
+
+    Button2UrlLineEdit = CreateNamedControl<godot::LineEdit>("Button2Url");
+    Button2UrlLineEdit->set_placeholder("https://example.com");
+    AddPropertyRow(PropertyGridContainer, "Button2 URL", Button2UrlLineEdit);
 
     UpdatePresenceButton = CreateNamedControl<godot::Button>("UpdatePresence");
     UpdatePresenceButton->set_text("Update");
@@ -988,6 +971,12 @@ void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
 
 void CspDiscordRpcGdCppMainControl::OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath)
 {
+    SelectedCspWorkData = GetCspWorkCacheData(ToPath(WorkPath));
+    if (SelectedCspWorkData.Name.is_empty())
+    {
+        SelectedCspWorkData.Name = WorkName;
+    }
+
     SelectedCSPWorkPath = WorkPath;
 
     if (ChooseCSPWorkButton != nullptr)
@@ -1038,19 +1027,21 @@ void CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed()
 {
     if (!CspDiscordRpcService::Get().IsInitialized())
     {
-        UpdateStatusText("Enable Discord RPC first.");
+        UpdateStatusText("Please enable Discord RPC first.");
         return;
     }
 
     DiscordRichPresenceData PresenceData;
-    PresenceData.State = "";
-    PresenceData.Details = "";
-    PresenceData.LargeImageKey = "";
-    PresenceData.LargeImageText = "";
+    PresenceData.State = SelectedCspWorkData.Name.is_empty() ? godot::String() : godot::vformat("Working on %s", SelectedCspWorkData.Name);
+    PresenceData.Details = SelectedCspWorkData.TotalWorkingTime.is_empty() ? godot::String() : godot::vformat("Total working time: %s", SelectedCspWorkData.TotalWorkingTime);
+    PresenceData.LargeImageKey = "https://cdn.discordapp.com/app-icons/1351785436850163733/be7cdabb8b164c564f9e844ba209a2b6.png?size=256";
+    PresenceData.LargeImageText = SelectedCspWorkData.CspVersion.is_empty() ? godot::String() : godot::vformat("CLIP STUDIO PAINT Ver.%s", SelectedCspWorkData.CspVersion);
     PresenceData.SmallImageKey = SmallImageKeyLineEdit != nullptr ? SmallImageKeyLineEdit->get_text() : godot::String();
     PresenceData.SmallImageText = SmallImageTextLineEdit != nullptr ? SmallImageTextLineEdit->get_text() : godot::String();
-    PresenceData.ButtonLabel = ButtonLabelLineEdit != nullptr ? ButtonLabelLineEdit->get_text() : godot::String();
-    PresenceData.ButtonUrl = ButtonUrlLineEdit != nullptr ? ButtonUrlLineEdit->get_text() : godot::String();
+    PresenceData.Button1Label = Button1LabelLineEdit != nullptr ? Button1LabelLineEdit->get_text() : godot::String();
+    PresenceData.Button1Url = Button1UrlLineEdit != nullptr ? Button1UrlLineEdit->get_text() : godot::String();
+    PresenceData.Button2Label = Button2LabelLineEdit != nullptr ? Button2LabelLineEdit->get_text() : godot::String();
+    PresenceData.Button2Url = Button2UrlLineEdit != nullptr ? Button2UrlLineEdit->get_text() : godot::String();
     PresenceData.StartTimestamp = PresenceStartTimestamp;
 
     CspDiscordRpcService::Get().UpdatePresence(PresenceData);
