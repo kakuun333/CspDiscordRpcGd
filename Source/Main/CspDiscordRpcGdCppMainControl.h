@@ -15,6 +15,7 @@ class GridContainer;
 class InputEvent;
 class Label;
 class LineEdit;
+class OptionButton;
 class Texture2D;
 class VBoxContainer;
 
@@ -29,14 +30,24 @@ class CspDiscordRpcGdCppMainControl final : public godot::Control
 {
     GDCLASS(CspDiscordRpcGdCppMainControl, godot::Control)
 
-protected:
-    static void _bind_methods();
-
 public:
+    enum class ERichPresenceTextLanguage : int32_t
+    {
+        English = 0,
+        Japanese,
+        TraditionalChinese,
+        SimplifiedChinese,
+    };
+
     CspDiscordRpcGdCppMainControl() = default;
 
     virtual void _ready() override;
     virtual void _exit_tree() override;
+    void SetRichPresenceTextLanguage(int32_t NewRichPresenceTextLanguage);
+    [[nodiscard]] int32_t GetRichPresenceTextLanguage() const;
+
+protected:
+    static void _bind_methods();
 
 private:
     void UpdateStatusText(const godot::String& StatusText) const;
@@ -74,11 +85,13 @@ private:
     void OnWorksWindowTreeExited();
     void OnCollapsiblePropertyGroupToggled(godot::Button* ToggleButton, godot::Control* ContentContainer);
     void OnDiscordRichPresenceToggled(bool bToggled);
+    void OnRichPresenceTextLanguageSelected(int32_t SelectedIndex);
     void OnUpdatePresencePressed();
 
     godot::Button* MaximizeButton{ nullptr };
     godot::CheckButton* DiscordRichPresenceCheckButton{ nullptr };
     godot::Button* ChooseCSPWorkButton{ nullptr };
+    godot::OptionButton* RichPresenceTextLanguageOptionButton{ nullptr };
     godot::Button* UpdatePresenceButton{ nullptr };
     godot::LineEdit* SmallImageKeyLineEdit{ nullptr };
     godot::LineEdit* SmallImageTextLineEdit{ nullptr };
@@ -93,6 +106,7 @@ private:
     CspDiscordRpcGdCppWorkData SelectedCspWorkData;
     godot::String SelectedCSPWorkPath;
     int64_t PresenceStartTimestamp{ 0 };
+    ERichPresenceTextLanguage RichPresenceTextLanguage{ ERichPresenceTextLanguage::English };
     bool bHasRestoreWindowState{ false };
     bool bIsWindowMaximized{ false };
 };

@@ -18,6 +18,7 @@
 #include "godot_cpp/classes/line_edit.hpp"
 #include "godot_cpp/classes/margin_container.hpp"
 #include "godot_cpp/classes/os.hpp"
+#include "godot_cpp/classes/option_button.hpp"
 #include "godot_cpp/classes/panel_container.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/scroll_container.hpp"
@@ -62,6 +63,13 @@ enum class EWindowControlIcon : uint8_t
     Close,
     FoldExpanded,
     FoldCollapsed,
+};
+
+enum class ERichPresenceTextType : uint8_t
+{
+    State,
+    Details,
+    LargeImageText,
 };
 
 [[nodiscard]] godot::String GetEmbeddedSvgContent(EWindowControlIcon Icon)
@@ -260,6 +268,50 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
     const int64_t Minutes = (TotalSeconds % 3600) / 60;
     const int64_t Seconds = TotalSeconds % 60;
     return godot::vformat("%02d:%02d:%02d:%02d", Days, Hours, Minutes, Seconds);
+}
+
+[[nodiscard]] godot::String GetRichPresenceFormatText(CspDiscordRpcGdCpp::CspDiscordRpcGdCppMainControl::ERichPresenceTextLanguage RichPresenceTextLanguage,
+                                                      ERichPresenceTextType RichPresenceTextType)
+{
+    using ERichPresenceTextLanguage = CspDiscordRpcGdCpp::CspDiscordRpcGdCppMainControl::ERichPresenceTextLanguage;
+
+    switch (RichPresenceTextType)
+    {
+        case ERichPresenceTextType::State:
+        {
+            switch (RichPresenceTextLanguage)
+            {
+                case ERichPresenceTextLanguage::Japanese:
+                    return godot::String::utf8("\"%s\" で作業している");
+                case ERichPresenceTextLanguage::TraditionalChinese:
+                    return godot::String::utf8("於 \"%s\" 中作業");
+                case ERichPresenceTextLanguage::SimplifiedChinese:
+                    return godot::String::utf8("于 \"%s\" 中作业");
+                default:
+                    return godot::String::utf8("Working on \"%s\"");
+            }
+        }
+        case ERichPresenceTextType::Details:
+        {
+            switch (RichPresenceTextLanguage)
+            {
+                case ERichPresenceTextLanguage::Japanese:
+                    return godot::String::utf8("総作業時間: %s");
+                case ERichPresenceTextLanguage::TraditionalChinese:
+                    return godot::String::utf8("總作業時長: %s");
+                case ERichPresenceTextLanguage::SimplifiedChinese:
+                    return godot::String::utf8("总作业时长: %s");
+                default:
+                    return godot::String::utf8("Total working time: %s");
+            }
+        }
+        case ERichPresenceTextType::LargeImageText:
+        {
+            return "CLIP STUDIO PAINT Ver.%s";
+        }
+        default:
+            return {};
+    }
 }
 
 [[nodiscard]] CspDiscordRpcGdCppWorkData GetCspWorkCacheData(const std::filesystem::path& CspWorkCachePath)
@@ -506,13 +558,24 @@ namespace CspDiscordRpcGdCpp
 
 void CspDiscordRpcGdCppMainControl::_bind_methods()
 {
+    godot::ClassDB::bind_method(godot::D_METHOD("set_rich_presence_text_language", "rich_presence_text_language"), &CspDiscordRpcGdCppMainControl::SetRichPresenceTextLanguage);
+    godot::ClassDB::bind_method(godot::D_METHOD("get_rich_presence_text_language"), &CspDiscordRpcGdCppMainControl::GetRichPresenceTextLanguage);
     godot::ClassDB::bind_method(godot::D_METHOD("sync_to_viewport_size"), &CspDiscordRpcGdCppMainControl::SyncToViewportSize);
     godot::ClassDB::bind_method(godot::D_METHOD("on_title_bar_gui_input", "event"), &CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_resize_handle_gui_input", "event", "resize_edge"), &CspDiscordRpcGdCppMainControl::OnResizeHandleGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_choose_csp_work_pressed"), &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed);
     godot::ClassDB::bind_method(godot::D_METHOD("on_csp_work_chosen", "work_name", "work_path"), &CspDiscordRpcGdCppMainControl::OnCspWorkChosen);
     godot::ClassDB::bind_method(godot::D_METHOD("on_collapsible_property_group_toggled", "toggle_button", "content_container"), &CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_rich_presence_text_language_selected", "selected_index"), &CspDiscordRpcGdCppMainControl::OnRichPresenceTextLanguageSelected);
     godot::ClassDB::bind_method(godot::D_METHOD("on_update_presence_pressed"), &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed);
+
+    ADD_PROPERTY(godot::PropertyInfo(godot::Variant::INT,
+                                     "Rich Presence Text Language",
+                                     godot::PROPERTY_HINT_ENUM,
+                                     godot::String::utf8("English,日本語,繁體中文,简体中文"),
+                                     godot::PROPERTY_USAGE_DEFAULT),
+                 "set_rich_presence_text_language",
+                 "get_rich_presence_text_language");
 }
 
 void CspDiscordRpcGdCppMainControl::_ready()
@@ -618,6 +681,20 @@ void CspDiscordRpcGdCppMainControl::_ready()
     DiscordRichPresenceCheckButton->connect("toggled", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled));
     AddPropertyRow(PropertyGridContainer, "Discord Rich Presence", DiscordRichPresenceCheckButton);
 
+    UpdatePresenceButton = CreateNamedControl<godot::Button>("UpdatePresence");
+    UpdatePresenceButton->set_text("Update");
+    UpdatePresenceButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed));
+    AddPropertyRow(PropertyGridContainer, "Update Presence", UpdatePresenceButton);
+
+    RichPresenceTextLanguageOptionButton = CreateNamedControl<godot::OptionButton>("RichPresenceTextLanguage");
+    RichPresenceTextLanguageOptionButton->add_item(godot::String::utf8("English"), static_cast<int32_t>(ERichPresenceTextLanguage::English));
+    RichPresenceTextLanguageOptionButton->add_item(godot::String::utf8("日本語"), static_cast<int32_t>(ERichPresenceTextLanguage::Japanese));
+    RichPresenceTextLanguageOptionButton->add_item(godot::String::utf8("繁體中文"), static_cast<int32_t>(ERichPresenceTextLanguage::TraditionalChinese));
+    RichPresenceTextLanguageOptionButton->add_item(godot::String::utf8("简体中文"), static_cast<int32_t>(ERichPresenceTextLanguage::SimplifiedChinese));
+    RichPresenceTextLanguageOptionButton->select(static_cast<int32_t>(RichPresenceTextLanguage));
+    RichPresenceTextLanguageOptionButton->connect("item_selected", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnRichPresenceTextLanguageSelected));
+    AddPropertyRow(PropertyGridContainer, "Rich Presence Text Language", RichPresenceTextLanguageOptionButton);
+
     ChooseCSPWorkButton = CreateNamedControl<godot::Button>("ChooseCSPWork");
     ChooseCSPWorkButton->set_text("Browse");
     ChooseCSPWorkButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed));
@@ -649,11 +726,6 @@ void CspDiscordRpcGdCppMainControl::_ready()
     Button2UrlLineEdit = CreateNamedControl<godot::LineEdit>("Button2Url");
     Button2UrlLineEdit->set_placeholder("https://example.com");
     AddPropertyRow(Button2GroupGridContainer, "Button2 URL", Button2UrlLineEdit);
-
-    UpdatePresenceButton = CreateNamedControl<godot::Button>("UpdatePresence");
-    UpdatePresenceButton->set_text("Update");
-    UpdatePresenceButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed));
-    AddPropertyRow(PropertyGridContainer, "Update Presence", UpdatePresenceButton);
 
     AddResizeHandle("ResizeTopLeft",
                     godot::DisplayServer::WINDOW_EDGE_TOP_LEFT,
@@ -751,6 +823,32 @@ void CspDiscordRpcGdCppMainControl::_exit_tree()
 {
     CspDiscordRpcService::Get().Shutdown();
     PresenceStartTimestamp = 0;
+}
+
+void CspDiscordRpcGdCppMainControl::SetRichPresenceTextLanguage(int32_t NewRichPresenceTextLanguage)
+{
+    switch (static_cast<ERichPresenceTextLanguage>(NewRichPresenceTextLanguage))
+    {
+        case ERichPresenceTextLanguage::English:
+        case ERichPresenceTextLanguage::Japanese:
+        case ERichPresenceTextLanguage::TraditionalChinese:
+        case ERichPresenceTextLanguage::SimplifiedChinese:
+            RichPresenceTextLanguage = static_cast<ERichPresenceTextLanguage>(NewRichPresenceTextLanguage);
+            break;
+        default:
+            RichPresenceTextLanguage = ERichPresenceTextLanguage::English;
+            break;
+    }
+
+    if (RichPresenceTextLanguageOptionButton != nullptr)
+    {
+        RichPresenceTextLanguageOptionButton->select(static_cast<int32_t>(RichPresenceTextLanguage));
+    }
+}
+
+int32_t CspDiscordRpcGdCppMainControl::GetRichPresenceTextLanguage() const
+{
+    return static_cast<int32_t>(RichPresenceTextLanguage);
 }
 
 void CspDiscordRpcGdCppMainControl::UpdateStatusText(const godot::String& StatusText) const
@@ -1112,6 +1210,16 @@ void CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled(bool bToggled)
     }
 }
 
+void CspDiscordRpcGdCppMainControl::OnRichPresenceTextLanguageSelected(int32_t SelectedIndex)
+{
+    SetRichPresenceTextLanguage(SelectedIndex);
+
+    if (CspDiscordRpcService::Get().IsInitialized())
+    {
+        OnUpdatePresencePressed();
+    }
+}
+
 void CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed()
 {
     if (!CspDiscordRpcService::Get().IsInitialized())
@@ -1121,10 +1229,16 @@ void CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed()
     }
 
     DiscordRichPresenceData PresenceData;
-    PresenceData.State = SelectedCspWorkData.Name.is_empty() ? godot::String() : godot::vformat("Working on %s", SelectedCspWorkData.Name);
-    PresenceData.Details = SelectedCspWorkData.TotalWorkingTime.is_empty() ? godot::String() : godot::vformat("Total working time: %s", SelectedCspWorkData.TotalWorkingTime);
+    PresenceData.State = SelectedCspWorkData.Name.is_empty()
+                             ? godot::String()
+                             : godot::vformat(GetRichPresenceFormatText(RichPresenceTextLanguage, ERichPresenceTextType::State), SelectedCspWorkData.Name);
+    PresenceData.Details = SelectedCspWorkData.TotalWorkingTime.is_empty()
+                               ? godot::String()
+                               : godot::vformat(GetRichPresenceFormatText(RichPresenceTextLanguage, ERichPresenceTextType::Details), SelectedCspWorkData.TotalWorkingTime);
     PresenceData.LargeImageKey = "https://cdn.discordapp.com/app-icons/1351785436850163733/be7cdabb8b164c564f9e844ba209a2b6.png?size=256";
-    PresenceData.LargeImageText = SelectedCspWorkData.CspVersion.is_empty() ? godot::String() : godot::vformat("CLIP STUDIO PAINT Ver.%s", SelectedCspWorkData.CspVersion);
+    PresenceData.LargeImageText = SelectedCspWorkData.CspVersion.is_empty()
+                                      ? godot::String()
+                                      : godot::vformat(GetRichPresenceFormatText(RichPresenceTextLanguage, ERichPresenceTextType::LargeImageText), SelectedCspWorkData.CspVersion);
     PresenceData.SmallImageKey = SmallImageKeyLineEdit != nullptr ? SmallImageKeyLineEdit->get_text() : godot::String();
     PresenceData.SmallImageText = SmallImageTextLineEdit != nullptr ? SmallImageTextLineEdit->get_text() : godot::String();
     PresenceData.Button1Label = Button1LabelLineEdit != nullptr ? Button1LabelLineEdit->get_text() : godot::String();
