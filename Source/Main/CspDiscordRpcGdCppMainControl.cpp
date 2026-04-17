@@ -1,12 +1,12 @@
 #include "CspDiscordRpcGdCppMainControl.h"
 
-#include "CspDiscordRpcGdCppConstants.h"
+#include "CspDiscordRpcGdCppWorkData.h"
+#include "CspDiscordRpcGdCppWorksWindow.h"
 #include "CspDiscordRpcService.h"
 #include "Generated/EmbeddedSvgResources.h"
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/check_button.hpp"
 #include "godot_cpp/classes/display_server.hpp"
-#include "godot_cpp/classes/file_dialog.hpp"
 #include "godot_cpp/classes/grid_container.hpp"
 #include "godot_cpp/classes/h_box_container.hpp"
 #include "godot_cpp/classes/image.hpp"
@@ -16,28 +16,42 @@
 #include "godot_cpp/classes/label.hpp"
 #include "godot_cpp/classes/line_edit.hpp"
 #include "godot_cpp/classes/margin_container.hpp"
+#include "godot_cpp/classes/json.hpp"
+#include "godot_cpp/classes/os.hpp"
 #include "godot_cpp/classes/panel_container.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/scroll_container.hpp"
 #include "godot_cpp/classes/style_box_flat.hpp"
 #include "godot_cpp/classes/v_box_container.hpp"
 #include "godot_cpp/classes/viewport.hpp"
+#include "godot_cpp/classes/window.hpp"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/core/error_macros.hpp"
 #include "godot_cpp/core/memory.hpp"
 #include "godot_cpp/core/object.hpp"
 #include "godot_cpp/variant/callable.hpp"
 #include "godot_cpp/variant/color.hpp"
+#include "godot_cpp/variant/packed_byte_array.hpp"
+#include "godot_cpp/variant/dictionary.hpp"
 #include "godot_cpp/variant/vector2.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <ctime>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <initializer_list>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 namespace
 {
 
 constexpr float ResizeBorderThickness = 3.0f;
 constexpr float ResizeCornerExtent = 12.0f;
+
+using CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkData;
 
 enum class EWindowControlIcon : uint8_t
 {
@@ -143,6 +157,359 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
     return PanelStyle;
 }
 
+[[nodiscard]] godot::String ToGodotString(const std::filesystem::path& Path)
+{
+    return godot::String(Path.wstring().c_str());
+}
+
+[[nodiscard]] std::filesystem::path ToPath(const godot::String& Value)
+{
+    const godot::PackedByteArray WideCharBuffer = Value.to_wchar_buffer();
+    if (WideCharBuffer.is_empty())
+    {
+        return {};
+    }
+
+    const wchar_t* WideChars = reinterpret_cast<const wchar_t*>(WideCharBuffer.ptr());
+    return std::filesystem::path(WideChars);
+}
+
+[[nodiscard]] bool HasSupportedImageExtension(const std::filesystem::path& Path)
+{
+    const std::wstring Extension = Path.extension().wstring();
+    return Extension == L".png" || Extension == L".jpg" || Extension == L".jpeg" || Extension == L".webp" || Extension == L".bmp";
+}
+
+[[nodiscard]] bool HasSupportedWorkExtension(const std::filesystem::path& Path)
+{
+    const std::wstring Extension = Path.extension().wstring();
+    return Extension == L".clip" || Extension == L".cmc" || Extension == L".lip";
+}
+
+[[nodiscard]] std::string ReadTextFile(const std::filesystem::path& FilePath)
+{
+    std::ifstream InputStream(FilePath, std::ios::binary);
+    if (!InputStream.is_open())
+    {
+        return {};
+    }
+
+    return {std::istreambuf_iterator<char>(InputStream), std::istreambuf_iterator<char>()};
+}
+
+[[nodiscard]] std::string ExtractTagValue(const std::string& Text, const std::string& TagName)
+{
+    const std::string StartTag = "<" + TagName + ">";
+    const std::string EndTag = "</" + TagName + ">";
+
+    const std::size_t StartIndex = Text.find(StartTag);
+    if (StartIndex == std::string::npos)
+    {
+        return {};
+    }
+
+    const std::size_t ValueStartIndex = StartIndex + StartTag.size();
+    const std::size_t EndIndex = Text.find(EndTag, ValueStartIndex);
+    if (EndIndex == std::string::npos || EndIndex <= ValueStartIndex)
+    {
+        return {};
+    }
+
+    return Text.substr(ValueStartIndex, EndIndex - ValueStartIndex);
+}
+
+[[nodiscard]] std::string ExtractAttributeValue(const std::string& Text, const std::string& ElementName, const std::string& AttributeName)
+{
+    const std::string ElementToken = "<" + ElementName;
+    const std::size_t ElementIndex = Text.find(ElementToken);
+    if (ElementIndex == std::string::npos)
+    {
+        return {};
+    }
+
+    const std::size_t ElementEndIndex = Text.find('>', ElementIndex);
+    if (ElementEndIndex == std::string::npos)
+    {
+        return {};
+    }
+
+    const std::string AttributeToken = AttributeName + "=\"";
+    const std::size_t AttributeIndex = Text.find(AttributeToken, ElementIndex);
+    if (AttributeIndex == std::string::npos || AttributeIndex > ElementEndIndex)
+    {
+        return {};
+    }
+
+    const std::size_t ValueStartIndex = AttributeIndex + AttributeToken.size();
+    const std::size_t ValueEndIndex = Text.find('"', ValueStartIndex);
+    if (ValueEndIndex == std::string::npos || ValueEndIndex <= ValueStartIndex)
+    {
+        return {};
+    }
+
+    return Text.substr(ValueStartIndex, ValueEndIndex - ValueStartIndex);
+}
+
+[[nodiscard]] std::string ExtractPngThumbnailRelativePath(const std::string& CatalogXmlContent)
+{
+    std::size_t SearchStartIndex = 0;
+
+    while (true)
+    {
+        const std::size_t FileStartIndex = CatalogXmlContent.find("<file", SearchStartIndex);
+        if (FileStartIndex == std::string::npos)
+        {
+            return {};
+        }
+
+        const std::size_t FileEndIndex = CatalogXmlContent.find("</file>", FileStartIndex);
+        if (FileEndIndex == std::string::npos)
+        {
+            return {};
+        }
+
+        const std::string FileBlock = CatalogXmlContent.substr(FileStartIndex, FileEndIndex - FileStartIndex);
+        if (FileBlock.find("image/png") != std::string::npos)
+        {
+            return ExtractTagValue(FileBlock, "path");
+        }
+
+        SearchStartIndex = FileEndIndex + 7;
+    }
+}
+
+[[nodiscard]] godot::String ConvertMillisecondsToDHMS(int64_t Milliseconds)
+{
+    const int64_t TotalSeconds = Milliseconds / 1000;
+    const int64_t Days = TotalSeconds / 86400;
+    const int64_t Hours = (TotalSeconds % 86400) / 3600;
+    const int64_t Minutes = (TotalSeconds % 3600) / 60;
+    const int64_t Seconds = TotalSeconds % 60;
+
+    if (Days > 0)
+    {
+        return godot::vformat("%dd %02dh %02dm %02ds", Days, Hours, Minutes, Seconds);
+    }
+
+    if (Hours > 0)
+    {
+        return godot::vformat("%02dh %02dm %02ds", Hours, Minutes, Seconds);
+    }
+
+    if (Minutes > 0)
+    {
+        return godot::vformat("%02dm %02ds", Minutes, Seconds);
+    }
+
+    return godot::vformat("%02ds", Seconds);
+}
+
+[[nodiscard]] CspDiscordRpcGdCppWorkData GetCspWorkCacheData(const std::filesystem::path& CspWorkCachePath)
+{
+    CspDiscordRpcGdCppWorkData WorkData;
+    if (CspWorkCachePath.empty())
+    {
+        return WorkData;
+    }
+
+    const std::filesystem::path CatalogPath = CspWorkCachePath / "catalog.xml";
+    if (!std::filesystem::exists(CatalogPath))
+    {
+        return WorkData;
+    }
+
+    const std::string CatalogXmlContent = ReadTextFile(CatalogPath);
+    if (CatalogXmlContent.empty())
+    {
+        return WorkData;
+    }
+
+    const std::string WorkName = ExtractTagValue(CatalogXmlContent, "name");
+    const std::string CspVersion = ExtractAttributeValue(CatalogXmlContent, "tool", "version");
+    const std::string ThumbnailRelativePath = ExtractPngThumbnailRelativePath(CatalogXmlContent);
+
+    if (!WorkName.empty())
+    {
+        WorkData.Name = godot::String(WorkName.c_str());
+    }
+
+    if (!CspVersion.empty())
+    {
+        WorkData.CspVersion = godot::String(CspVersion.c_str());
+    }
+
+    if (!ThumbnailRelativePath.empty())
+    {
+        WorkData.ThumbnailPath = ToGodotString(CspWorkCachePath / std::filesystem::path(ThumbnailRelativePath));
+    }
+
+    const std::filesystem::path WorkingTimePath = CspWorkCachePath / "workingTime.json";
+    if (std::filesystem::exists(WorkingTimePath))
+    {
+        std::ifstream WorkingTimeStream(WorkingTimePath, std::ios::binary);
+        if (WorkingTimeStream.is_open())
+        {
+            const std::string WorkingTimeJson {std::istreambuf_iterator<char>(WorkingTimeStream), std::istreambuf_iterator<char>()};
+            const godot::Variant ParsedJson = godot::JSON::parse_string(godot::String(WorkingTimeJson.c_str()));
+            if (ParsedJson.get_type() == godot::Variant::DICTIONARY)
+            {
+                const godot::Dictionary WorkingTimeDictionary = ParsedJson;
+                if (WorkingTimeDictionary.has("totalworkingtime"))
+                {
+                    const int64_t TotalWorkingTimeMilliseconds = static_cast<int64_t>(WorkingTimeDictionary["totalworkingtime"]);
+                    WorkData.TotalWorkingTime = ConvertMillisecondsToDHMS(TotalWorkingTimeMilliseconds);
+                }
+            }
+        }
+    }
+
+    if (WorkData.Name.is_empty())
+    {
+        WorkData.Name = godot::String(CspWorkCachePath.filename().wstring().c_str());
+    }
+
+    if (WorkData.ThumbnailPath.is_empty())
+    {
+        const std::filesystem::path DefaultThumbnailPath = CspWorkCachePath / "thumbnail" / "thumbnail.png";
+        if (std::filesystem::exists(DefaultThumbnailPath))
+        {
+            WorkData.ThumbnailPath = ToGodotString(DefaultThumbnailPath);
+        }
+    }
+
+    WorkData.CacheDataPath = ToGodotString(CspWorkCachePath);
+    return WorkData;
+}
+
+[[nodiscard]] std::vector<std::filesystem::path> GetCandidateRootPaths()
+{
+    std::vector<std::filesystem::path> CandidateRoots;
+
+    const godot::OS* OperatingSystem = godot::OS::get_singleton();
+    const godot::String LocalAppData = OperatingSystem->get_environment("LOCALAPPDATA");
+    const godot::String AppData = OperatingSystem->get_environment("APPDATA");
+    const godot::String UserProfile = OperatingSystem->get_environment("USERPROFILE");
+    const godot::String DocumentsDir = OperatingSystem->get_system_dir(godot::OS::SYSTEM_DIR_DOCUMENTS);
+
+    if (!LocalAppData.is_empty())
+    {
+        CandidateRoots.emplace_back(ToPath(LocalAppData) / "CELSYS");
+        CandidateRoots.emplace_back(ToPath(LocalAppData) / "CELSYSUserData" / "CELSYS" / "CLIPStudioCommon" / "Document");
+    }
+
+    if (!AppData.is_empty())
+    {
+        CandidateRoots.emplace_back(ToPath(AppData) / "CELSYS");
+        CandidateRoots.emplace_back(ToPath(AppData) / "CELSYSUserData" / "CELSYS" / "CLIPStudioCommon" / "Document");
+    }
+
+    if (!DocumentsDir.is_empty())
+    {
+        CandidateRoots.emplace_back(ToPath(DocumentsDir) / "CELSYS");
+    }
+
+    if (!UserProfile.is_empty())
+    {
+        CandidateRoots.emplace_back(ToPath(UserProfile) / "Documents" / "CELSYS");
+        CandidateRoots.emplace_back(ToPath(UserProfile) / "AppData" / "Roaming" / "CELSYSUserData" / "CELSYS" / "CLIPStudioCommon" / "Document");
+    }
+
+    std::vector<std::filesystem::path> UniqueRoots;
+    std::unordered_set<std::wstring> SeenPaths;
+
+    for (const std::filesystem::path& CandidateRoot : CandidateRoots)
+    {
+        std::error_code ErrorCode;
+        const std::filesystem::path NormalizedPath = std::filesystem::weakly_canonical(CandidateRoot, ErrorCode);
+        const std::filesystem::path FinalPath = ErrorCode ? CandidateRoot : NormalizedPath;
+        const std::wstring Key = FinalPath.lexically_normal().wstring();
+
+        if (!SeenPaths.insert(Key).second)
+        {
+            continue;
+        }
+
+        if (std::filesystem::exists(FinalPath))
+        {
+            UniqueRoots.push_back(FinalPath);
+        }
+    }
+
+    return UniqueRoots;
+}
+
+[[nodiscard]] std::vector<CspDiscordRpcGdCppWorkData> DiscoverCspWorks()
+{
+    std::vector<CspDiscordRpcGdCppWorkData> Works;
+    std::unordered_set<std::wstring> SeenPaths;
+
+    try
+    {
+        for (const std::filesystem::path& RootPath : GetCandidateRootPaths())
+        {
+            std::error_code ErrorCode;
+            for (const std::filesystem::directory_entry& DirectoryEntry : std::filesystem::recursive_directory_iterator(RootPath, std::filesystem::directory_options::skip_permission_denied, ErrorCode))
+            {
+                if (ErrorCode || !DirectoryEntry.is_regular_file(ErrorCode))
+                {
+                    continue;
+                }
+
+                const std::filesystem::path EntryPath = DirectoryEntry.path();
+                if (EntryPath.filename().wstring() == L"catalog.xml")
+                {
+                    const std::filesystem::path CacheDirectoryPath = EntryPath.parent_path();
+                    const std::wstring EntryKey = CacheDirectoryPath.lexically_normal().wstring();
+                    if (!SeenPaths.insert(EntryKey).second)
+                    {
+                        continue;
+                    }
+
+                    const CspDiscordRpcGdCppWorkData WorkData = GetCspWorkCacheData(CacheDirectoryPath);
+                    if (!WorkData.Name.is_empty())
+                    {
+                        Works.push_back(WorkData);
+                    }
+
+                    continue;
+                }
+
+                if (!HasSupportedWorkExtension(EntryPath))
+                {
+                    continue;
+                }
+
+                const std::wstring EntryKey = EntryPath.lexically_normal().wstring();
+                if (!SeenPaths.insert(EntryKey).second)
+                {
+                    continue;
+                }
+
+                CspDiscordRpcGdCppWorkData WorkData;
+                WorkData.Name = godot::String(EntryPath.stem().wstring().c_str());
+                WorkData.CacheDataPath = ToGodotString(EntryPath);
+                WorkData.ThumbnailPath = "";
+                WorkData.CspVersion = "";
+                WorkData.TotalWorkingTime = "";
+                Works.push_back(WorkData);
+            }
+        }
+
+        std::sort(Works.begin(), Works.end(), [](const CspDiscordRpcGdCppWorkData& Left, const CspDiscordRpcGdCppWorkData& Right)
+        {
+            return Left.Name.naturalnocasecmp_to(Right.Name) < 0;
+        });
+    }
+    catch (std::exception& e)
+    {
+        godot::UtilityFunctions::print("Exception: ", e.what());
+    }
+
+
+
+    return Works;
+}
+
 } // namespace
 
 namespace CspDiscordRpcGdCpp
@@ -154,6 +521,7 @@ void CspDiscordRpcGdCppMainControl::_bind_methods()
     godot::ClassDB::bind_method(godot::D_METHOD("on_title_bar_gui_input", "event"), &CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_resize_handle_gui_input", "event", "resize_edge"), &CspDiscordRpcGdCppMainControl::OnResizeHandleGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_choose_csp_work_pressed"), &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_csp_work_chosen", "work_name", "work_path"), &CspDiscordRpcGdCppMainControl::OnCspWorkChosen);
     godot::ClassDB::bind_method(godot::D_METHOD("on_update_presence_pressed"), &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed);
 }
 
@@ -264,7 +632,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     AddPropertyRow(PropertyGridContainer, "Small Image Text", SmallImageTextLineEdit);
 
     ButtonLabelLineEdit = CreateNamedControl<godot::LineEdit>("ButtonLabel");
-    ButtonLabelLineEdit->set_placeholder("Open Pinterest");
+    ButtonLabelLineEdit->set_placeholder("Open My Website");
     AddPropertyRow(PropertyGridContainer, "Button Label", ButtonLabelLineEdit);
 
     ButtonUrlLineEdit = CreateNamedControl<godot::LineEdit>("ButtonUrl");
@@ -590,7 +958,50 @@ void CspDiscordRpcGdCppMainControl::OnClosePressed()
 
 void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
 {
+    const std::vector<CspDiscordRpcGdCppWorkData> Works = DiscoverCspWorks();
+    if (Works.empty())
+    {
+        UpdateStatusText("No CSP work files were found under the CELSYS folders.");
+        return;
+    }
 
+    if (WorksWindow == nullptr)
+    {
+        WorksWindow = memnew(CspDiscordRpcGdCppWorksWindow);
+        WorksWindow->connect("work_chosen", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCspWorkChosen));
+        WorksWindow->connect("tree_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWorksWindowTreeExited));
+
+        if (godot::Window* OwnerWindow = get_window())
+        {
+            OwnerWindow->add_child(WorksWindow);
+        }
+        else
+        {
+            add_child(WorksWindow);
+        }
+    }
+
+    WorksWindow->SetWorks(Works);
+    WorksWindow->set_exclusive(false);
+    WorksWindow->popup_centered(godot::Vector2i(960, 640));
+}
+
+void CspDiscordRpcGdCppMainControl::OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath)
+{
+    SelectedCSPWorkPath = WorkPath;
+
+    if (ChooseCSPWorkButton != nullptr)
+    {
+        ChooseCSPWorkButton->set_text(WorkName.is_empty() ? godot::String("Browse") : WorkName);
+        ChooseCSPWorkButton->set_tooltip_text(WorkPath);
+    }
+
+    UpdateStatusText(godot::vformat("Selected CSP work: %s", WorkName));
+}
+
+void CspDiscordRpcGdCppMainControl::OnWorksWindowTreeExited()
+{
+    WorksWindow = nullptr;
 }
 
 void CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled(bool bToggled)

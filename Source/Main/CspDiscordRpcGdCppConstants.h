@@ -1,6 +1,0 @@
-﻿namespace CspDiscordRpcGdCpp
-{
-
-
-
-} // namespace CspDiscordRpcGdCpp

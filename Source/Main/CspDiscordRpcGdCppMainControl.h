@@ -1,15 +1,16 @@
 #pragma once
 
+#include "CspDiscordRpcGdCppWorkData.h"
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/control.hpp"
 #include "godot_cpp/classes/display_server.hpp"
 #include "godot_cpp/variant/vector2i.hpp"
+#include <vector>
 
 namespace godot
 {
 
 class CheckButton;
-class FileDialog;
 class GridContainer;
 class InputEvent;
 class Label;
@@ -20,6 +21,8 @@ class Texture2D;
 
 namespace CspDiscordRpcGdCpp
 {
+
+class CspDiscordRpcGdCppWorksWindow;
 
 class CspDiscordRpcGdCppMainControl final : public godot::Control
 {
@@ -62,6 +65,8 @@ private:
     void OnMaximizePressed();
     void OnClosePressed();
     void OnChooseCspWorkPressed();
+    void OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath);
+    void OnWorksWindowTreeExited();
     void OnDiscordRichPresenceToggled(bool bToggled);
     void OnUpdatePresencePressed();
 
@@ -74,6 +79,7 @@ private:
     godot::LineEdit* ButtonLabelLineEdit = nullptr;
     godot::LineEdit* ButtonUrlLineEdit = nullptr;
     godot::Label* StatusLabel = nullptr;
+    CspDiscordRpcGdCppWorksWindow* WorksWindow = nullptr;
     godot::Vector2i RestoreWindowPosition;
     godot::Vector2i RestoreWindowSize;
     godot::String SelectedCSPWorkPath;

@@ -1,33 +1,36 @@
-﻿#include "CspDiscordRpcGdCppFunctionLibrary.h"
+#include "CspDiscordRpcGdCppFunctionLibrary.h"
 #include "CspDiscordRpcGdCppMainControl.h"
+#include "CspDiscordRpcGdCppWorkItem.h"
+#include "CspDiscordRpcGdCppWorksWindow.h"
 #include "godot_cpp/classes/editor_plugin_registration.hpp"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/godot.hpp"
 
-
-// 初始化函數：註冊類別
+// Initialization function: register classes.
 void InitializeModule(godot::ModuleInitializationLevel InitLevel)
 {
-    // 註冊核心資源 (SCENE 層級)
+    // Register scene-level classes.
     if (InitLevel == godot::MODULE_INITIALIZATION_LEVEL_SCENE)
     {
         godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppMainControl>();
+        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkItem>();
+        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorksWindow>();
         godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppFunctionLibrary>();
     }
 
-    // 註冊編輯器插件 (EDITOR 層級)
+    // Register editor-level classes.
     if (InitLevel == godot::MODULE_INITIALIZATION_LEVEL_EDITOR)
     {
     }
 }
 
-// 卸載函數：清理資源（即使為空也建議寫上）
+// Shutdown function.
 void UninitializeModule(godot::ModuleInitializationLevel InitLevel)
 {
-    // 這裡可以留空
+    // Intentionally empty.
 }
 
-// Godot DLL 載入時唯一認的入口
+// Entry point recognized by Godot when loading the extension DLL.
 extern "C"
 {
 GDExtensionBool GDE_EXPORT CspDiscordRpcGdCppEntryPoint(
@@ -35,14 +38,14 @@ GDExtensionBool GDE_EXPORT CspDiscordRpcGdCppEntryPoint(
     const GDExtensionClassLibraryPtr p_library,
     GDExtensionInitialization* r_initialization)
 {
-    // 初始化綁定物件
+    // Initialize the binding object.
     godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 
-    // 連結你的初始化與卸載函數
+    // Hook up init and shutdown callbacks.
     init_obj.register_initializer(InitializeModule);
     init_obj.register_terminator(UninitializeModule);
 
-    // 設定最低初始化等級
+    // Set the minimum initialization level.
     init_obj.set_minimum_library_initialization_level(godot::MODULE_INITIALIZATION_LEVEL_SCENE);
 
     return init_obj.init();
