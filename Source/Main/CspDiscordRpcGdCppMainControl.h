@@ -123,6 +123,7 @@ private:
     godot::Button* ChooseCSPWorkButton{ nullptr };
     godot::OptionButton* RichPresenceTextLanguageOptionButton{ nullptr };
     godot::Button* UpdatePresenceButton{ nullptr };
+    godot::LineEdit* ClipStudioCommonRootPathLineEdit{ nullptr };
     godot::LineEdit* SmallImageKeyLineEdit{ nullptr };
     godot::LineEdit* SmallImageTextLineEdit{ nullptr };
     godot::LineEdit* Button1LabelLineEdit{ nullptr };

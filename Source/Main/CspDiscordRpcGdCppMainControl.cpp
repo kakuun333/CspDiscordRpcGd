@@ -387,65 +387,61 @@ void SetNativeWindowVisibility(const godot::Window* Window, bool bVisible)
     }
 
     const std::filesystem::path CatalogPath = CspWorkCachePath / "catalog.xml";
-    if (!std::filesystem::exists(CatalogPath))
+    if (std::filesystem::exists(CatalogPath))
     {
-        return WorkData;
-    }
-
-    godot::Ref<godot::XMLParser> XmlParser;
-    XmlParser.instantiate();
-    if (XmlParser->open(ToGodotString(CatalogPath)) != godot::OK)
-    {
-        return WorkData;
-    }
-
-    std::vector<godot::String> CurrentXmlPath;
-    bool bInsidePngFile = false;
-
-    while (XmlParser->read() == godot::OK)
-    {
-        const godot::XMLParser::NodeType NodeType = XmlParser->get_node_type();
-        if (NodeType == godot::XMLParser::NODE_ELEMENT)
+        godot::Ref<godot::XMLParser> XmlParser;
+        XmlParser.instantiate();
+        if (XmlParser->open(ToGodotString(CatalogPath)) == godot::OK)
         {
-            const godot::String NodeName = XmlParser->get_node_name();
-            CurrentXmlPath.push_back(NodeName);
+            std::vector<godot::String> CurrentXmlPath;
+            bool bInsidePngFile = false;
 
-            if (MatchesXmlPath(CurrentXmlPath, { "archive", "catalog", "name" }) && WorkData.Name.is_empty())
+            while (XmlParser->read() == godot::OK)
             {
-                WorkData.Name = ReadXmlTextValue(XmlParser);
-            }
-            else if (MatchesXmlPath(CurrentXmlPath, { "archive", "catalog", "groups", "group", "tool" }) && WorkData.CspVersion.is_empty())
-            {
-                WorkData.CspVersion = XmlParser->get_named_attribute_value_safe("version");
-            }
-            else if (MatchesXmlPath(CurrentXmlPath, { "archive", "files", "file" }))
-            {
-                bInsidePngFile = XmlParser->get_named_attribute_value_safe("mime").contains("image/png");
-            }
-            else if (bInsidePngFile && MatchesXmlPath(CurrentXmlPath, { "archive", "files", "file", "path" }) && WorkData.ThumbnailPath.is_empty())
-            {
-                const godot::String RelativeThumbnailPath = ReadXmlTextValue(XmlParser);
-                if (!RelativeThumbnailPath.is_empty())
+                const godot::XMLParser::NodeType NodeType = XmlParser->get_node_type();
+                if (NodeType == godot::XMLParser::NODE_ELEMENT)
                 {
-                    WorkData.ThumbnailPath = ToGodotString(CspWorkCachePath / ToPath(RelativeThumbnailPath));
+                    const godot::String NodeName = XmlParser->get_node_name();
+                    CurrentXmlPath.push_back(NodeName);
+
+                    if (MatchesXmlPath(CurrentXmlPath, { "archive", "catalog", "name" }) && WorkData.Name.is_empty())
+                    {
+                        WorkData.Name = ReadXmlTextValue(XmlParser);
+                    }
+                    else if (MatchesXmlPath(CurrentXmlPath, { "archive", "catalog", "groups", "group", "tool" }) && WorkData.CspVersion.is_empty())
+                    {
+                        WorkData.CspVersion = XmlParser->get_named_attribute_value_safe("version");
+                    }
+                    else if (MatchesXmlPath(CurrentXmlPath, { "archive", "files", "file" }))
+                    {
+                        bInsidePngFile = XmlParser->get_named_attribute_value_safe("mime").contains("image/png");
+                    }
+                    else if (bInsidePngFile && MatchesXmlPath(CurrentXmlPath, { "archive", "files", "file", "path" }) && WorkData.ThumbnailPath.is_empty())
+                    {
+                        const godot::String RelativeThumbnailPath = ReadXmlTextValue(XmlParser);
+                        if (!RelativeThumbnailPath.is_empty())
+                        {
+                            WorkData.ThumbnailPath = ToGodotString(CspWorkCachePath / ToPath(RelativeThumbnailPath));
+                        }
+                    }
+
+                    if (XmlParser->is_empty() && !CurrentXmlPath.empty())
+                    {
+                        CurrentXmlPath.pop_back();
+                    }
                 }
-            }
+                else if (NodeType == godot::XMLParser::NODE_ELEMENT_END)
+                {
+                    if (XmlParser->get_node_name() == godot::String("file"))
+                    {
+                        bInsidePngFile = false;
+                    }
 
-            if (XmlParser->is_empty() && !CurrentXmlPath.empty())
-            {
-                CurrentXmlPath.pop_back();
-            }
-        }
-        else if (NodeType == godot::XMLParser::NODE_ELEMENT_END)
-        {
-            if (XmlParser->get_node_name() == godot::String("file"))
-            {
-                bInsidePngFile = false;
-            }
-
-            if (!CurrentXmlPath.empty())
-            {
-                CurrentXmlPath.pop_back();
+                    if (!CurrentXmlPath.empty())
+                    {
+                        CurrentXmlPath.pop_back();
+                    }
+                }
             }
         }
     }
@@ -488,7 +484,7 @@ void SetNativeWindowVisibility(const godot::Window* Window, bool bVisible)
     return WorkData;
 }
 
-[[nodiscard]] std::vector<std::filesystem::path> GetCandidateRootPaths()
+[[nodiscard]] std::vector<std::filesystem::path> GetCandidateRootPaths(const godot::String& ClipStudioCommonRootPath)
 {
     std::vector<std::filesystem::path> CandidateRoots;
 
@@ -513,6 +509,17 @@ void SetNativeWindowVisibility(const godot::Window* Window, bool bVisible)
     if (!DocumentsDir.is_empty())
     {
         CandidateRoots.emplace_back(ToPath(DocumentsDir) / "CELSYS");
+    }
+
+    if (!ClipStudioCommonRootPath.is_empty())
+    {
+        const std::filesystem::path ConfiguredRootPath = ToPath(ClipStudioCommonRootPath);
+        CandidateRoots.push_back(ConfiguredRootPath);
+
+        if (ConfiguredRootPath.filename().wstring() != L"Document")
+        {
+            CandidateRoots.push_back(ConfiguredRootPath / "Document");
+        }
     }
 
     if (!UserProfile.is_empty())
@@ -545,14 +552,14 @@ void SetNativeWindowVisibility(const godot::Window* Window, bool bVisible)
     return UniqueRoots;
 }
 
-[[nodiscard]] std::vector<CspDiscordRpcGdCppWorkData> DiscoverCspWorks()
+[[nodiscard]] std::vector<CspDiscordRpcGdCppWorkData> DiscoverCspWorks(const godot::String& ClipStudioCommonRootPath)
 {
     std::vector<CspDiscordRpcGdCppWorkData> Works;
     std::unordered_set<std::wstring> SeenPaths;
 
     try
     {
-        for (const std::filesystem::path& RootPath : GetCandidateRootPaths())
+        for (const std::filesystem::path& RootPath : GetCandidateRootPaths(ClipStudioCommonRootPath))
         {
             std::error_code ErrorCode;
             for (const std::filesystem::directory_entry& DirectoryEntry : std::filesystem::recursive_directory_iterator(RootPath, std::filesystem::directory_options::skip_permission_denied, ErrorCode))
@@ -573,7 +580,7 @@ void SetNativeWindowVisibility(const godot::Window* Window, bool bVisible)
                     }
 
                     const CspDiscordRpcGdCppWorkData WorkData = GetCspWorkCacheData(CacheDirectoryPath);
-                    if (!WorkData.Name.is_empty())
+                    if (!WorkData.CacheDataPath.is_empty())
                     {
                         Works.push_back(WorkData);
                     }
@@ -800,6 +807,12 @@ void CspDiscordRpcGdCppMainControl::_ready()
     ChooseCSPWorkButton->set_text("Browse");
     ChooseCSPWorkButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed));
     AddPropertyRow(PropertyGridContainer, "Choose CSP Work", ChooseCSPWorkButton);
+
+    ClipStudioCommonRootPathLineEdit = CreateNamedControl<godot::LineEdit>("ClipStudioCommonRootPath");
+    ClipStudioCommonRootPathLineEdit->set_placeholder("D:/Documents/CELSYS/CLIPStudioCommon");
+    ClipStudioCommonRootPathLineEdit->set_tooltip_text("Optional. Set this if you moved the CLIPStudioCommon folder away from the default CELSYS locations.");
+    ClipStudioCommonRootPathLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
+    AddPropertyRow(PropertyGridContainer, "CLIPStudioCommon Root Path", ClipStudioCommonRootPathLineEdit);
 
     godot::GridContainer* SmallImageGroupGridContainer = CreateCollapsiblePropertyGroup(PropertySectionContainer, "SmallImageGroup", "Small Image", true, {});
     SmallImageKeyLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageKey");
@@ -1029,6 +1042,11 @@ void CspDiscordRpcGdCppMainControl::LoadPropertySettings()
         ApplySelectedCspWorkPath(static_cast<godot::String>(PropertySettings["SelectedCSPWorkPath"]), {});
     }
 
+    if (PropertySettings.has("ClipStudioCommonRootPath") && ClipStudioCommonRootPathLineEdit != nullptr)
+    {
+        ClipStudioCommonRootPathLineEdit->set_text(static_cast<godot::String>(PropertySettings["ClipStudioCommonRootPath"]));
+    }
+
     if (PropertySettings.has("SmallImageKey") && SmallImageKeyLineEdit != nullptr)
     {
         SmallImageKeyLineEdit->set_text(static_cast<godot::String>(PropertySettings["SmallImageKey"]));
@@ -1084,6 +1102,8 @@ void CspDiscordRpcGdCppMainControl::SavePropertySettings() const
     PropertySettings["DiscordRichPresenceEnabled"] =
         DiscordRichPresenceCheckButton != nullptr ? DiscordRichPresenceCheckButton->is_pressed() : false;
     PropertySettings["SelectedCSPWorkPath"] = SelectedCSPWorkPath;
+    PropertySettings["ClipStudioCommonRootPath"] =
+        ClipStudioCommonRootPathLineEdit != nullptr ? ClipStudioCommonRootPathLineEdit->get_text().strip_edges() : godot::String();
     PropertySettings["SmallImageKey"] = SmallImageKeyLineEdit != nullptr ? SmallImageKeyLineEdit->get_text() : godot::String();
     PropertySettings["SmallImageText"] = SmallImageTextLineEdit != nullptr ? SmallImageTextLineEdit->get_text() : godot::String();
     PropertySettings["Button1Label"] = Button1LabelLineEdit != nullptr ? Button1LabelLineEdit->get_text() : godot::String();
@@ -1571,10 +1591,13 @@ void CspDiscordRpcGdCppMainControl::OnClosePressed()
 
 void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
 {
-    const std::vector<CspDiscordRpcGdCppWorkData> Works = DiscoverCspWorks();
+    const godot::String ClipStudioCommonRootPath =
+        ClipStudioCommonRootPathLineEdit != nullptr ? ClipStudioCommonRootPathLineEdit->get_text().strip_edges() : godot::String();
+    const std::vector<CspDiscordRpcGdCppWorkData> Works = DiscoverCspWorks(ClipStudioCommonRootPath);
     if (Works.empty())
     {
-        UpdateStatusText("No CSP work files were found under the CELSYS folders.");
+        UpdateStatusText(ClipStudioCommonRootPath.is_empty() ? "No CSP work files were found under the CELSYS folders."
+                                                             : "No CSP work files were found. Check the CLIPStudioCommon Root Path setting.");
         return;
     }
 
