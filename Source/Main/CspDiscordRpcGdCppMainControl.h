@@ -8,8 +8,12 @@
 namespace godot
 {
 
+class CheckButton;
+class FileDialog;
 class GridContainer;
 class InputEvent;
+class Label;
+class LineEdit;
 class Texture2D;
 
 } // namespace godot
@@ -27,9 +31,11 @@ protected:
 public:
     CspDiscordRpcGdCppMainControl() = default;
 
-    void _ready() override;
+    virtual void _ready() override;
+    virtual void _exit_tree() override;
 
 private:
+    void UpdateStatusText(const godot::String& StatusText) const;
     void SyncToViewportSize();
     void CaptureRestoreWindowState();
     void RestoreWindowState(bool bRestorePosition) const;
@@ -55,10 +61,23 @@ private:
     void OnMinimizePressed();
     void OnMaximizePressed();
     void OnClosePressed();
+    void OnChooseCspWorkPressed();
+    void OnDiscordRichPresenceToggled(bool bToggled);
+    void OnUpdatePresencePressed();
 
     godot::Button* MaximizeButton = nullptr;
+    godot::CheckButton* DiscordRichPresenceCheckButton = nullptr;
+    godot::Button* ChooseCSPWorkButton = nullptr;
+    godot::Button* UpdatePresenceButton = nullptr;
+    godot::LineEdit* SmallImageKeyLineEdit = nullptr;
+    godot::LineEdit* SmallImageTextLineEdit = nullptr;
+    godot::LineEdit* ButtonLabelLineEdit = nullptr;
+    godot::LineEdit* ButtonUrlLineEdit = nullptr;
+    godot::Label* StatusLabel = nullptr;
     godot::Vector2i RestoreWindowPosition;
     godot::Vector2i RestoreWindowSize;
+    godot::String SelectedCSPWorkPath;
+    int64_t PresenceStartTimestamp = 0;
     bool bHasRestoreWindowState = false;
     bool bIsWindowMaximized = false;
 };

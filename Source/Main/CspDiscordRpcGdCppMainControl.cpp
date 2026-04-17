@@ -1,10 +1,12 @@
 #include "CspDiscordRpcGdCppMainControl.h"
 
+#include "CspDiscordRpcGdCppConstants.h"
+#include "CspDiscordRpcService.h"
 #include "Generated/EmbeddedSvgResources.h"
-
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/check_button.hpp"
 #include "godot_cpp/classes/display_server.hpp"
+#include "godot_cpp/classes/file_dialog.hpp"
 #include "godot_cpp/classes/grid_container.hpp"
 #include "godot_cpp/classes/h_box_container.hpp"
 #include "godot_cpp/classes/image.hpp"
@@ -29,6 +31,7 @@
 #include "godot_cpp/variant/vector2.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <ctime>
 
 namespace
 {
@@ -150,6 +153,8 @@ void CspDiscordRpcGdCppMainControl::_bind_methods()
     godot::ClassDB::bind_method(godot::D_METHOD("sync_to_viewport_size"), &CspDiscordRpcGdCppMainControl::SyncToViewportSize);
     godot::ClassDB::bind_method(godot::D_METHOD("on_title_bar_gui_input", "event"), &CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_resize_handle_gui_input", "event", "resize_edge"), &CspDiscordRpcGdCppMainControl::OnResizeHandleGuiInput);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_choose_csp_work_pressed"), &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_update_presence_pressed"), &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed);
 }
 
 void CspDiscordRpcGdCppMainControl::_ready()
@@ -240,25 +245,40 @@ void CspDiscordRpcGdCppMainControl::_ready()
     PropertyGridContainer->add_theme_constant_override("v_separation", 12);
     ContentMargin->add_child(PropertyGridContainer);
 
-    godot::CheckButton* DiscordRichPresenceCheckButton = CreateNamedControl<godot::CheckButton>("Discord Rich Presence");
+    DiscordRichPresenceCheckButton = CreateNamedControl<godot::CheckButton>("DiscordRichPresence");
     DiscordRichPresenceCheckButton->set_text("");
+    DiscordRichPresenceCheckButton->connect("toggled", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled));
     AddPropertyRow(PropertyGridContainer, "Discord Rich Presence", DiscordRichPresenceCheckButton);
 
-    godot::Button* ChooseCSPWorkButton = CreateNamedControl<godot::Button>("Choose CSP Work");
-    ChooseCSPWorkButton->set_text("Choose CSP Work");
+    ChooseCSPWorkButton = CreateNamedControl<godot::Button>("ChooseCSPWork");
+    ChooseCSPWorkButton->set_text("Browse");
+    ChooseCSPWorkButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed));
     AddPropertyRow(PropertyGridContainer, "Choose CSP Work", ChooseCSPWorkButton);
 
-    godot::LineEdit* SmallImageSourceLineEdit = CreateNamedControl<godot::LineEdit>("Small Image Source");
-    SmallImageSourceLineEdit->set_placeholder("https://example/image.png");
-    AddPropertyRow(PropertyGridContainer, "Small Image Source", SmallImageSourceLineEdit);
+    SmallImageKeyLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageKey");
+    SmallImageKeyLineEdit->set_placeholder("small_asset_key");
+    AddPropertyRow(PropertyGridContainer, "Small Image Key", SmallImageKeyLineEdit);
 
-    godot::LineEdit* SmallImageTextLineEdit = CreateNamedControl<godot::LineEdit>("Small Image Text");
+    SmallImageTextLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageText");
     SmallImageTextLineEdit->set_placeholder("Drawing something");
     AddPropertyRow(PropertyGridContainer, "Small Image Text", SmallImageTextLineEdit);
 
-    godot::Button* UpdatePresenceButton = CreateNamedControl<godot::Button>("Update Presence");
-    UpdatePresenceButton->set_text("Update Presence");
+    ButtonLabelLineEdit = CreateNamedControl<godot::LineEdit>("ButtonLabel");
+    ButtonLabelLineEdit->set_placeholder("Open Pinterest");
+    AddPropertyRow(PropertyGridContainer, "Button Label", ButtonLabelLineEdit);
+
+    ButtonUrlLineEdit = CreateNamedControl<godot::LineEdit>("ButtonUrl");
+    ButtonUrlLineEdit->set_placeholder("https://example.com");
+    AddPropertyRow(PropertyGridContainer, "Button URL", ButtonUrlLineEdit);
+
+    UpdatePresenceButton = CreateNamedControl<godot::Button>("UpdatePresence");
+    UpdatePresenceButton->set_text("Update");
+    UpdatePresenceButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed));
     AddPropertyRow(PropertyGridContainer, "Update Presence", UpdatePresenceButton);
+
+    StatusLabel = CreatePropertyLabel("Discord RPC is disabled.");
+    StatusLabel->set_name("StatusLabel");
+    AddPropertyRow(PropertyGridContainer, "Status", StatusLabel);
 
     AddResizeHandle("ResizeTopLeft",
                     godot::DisplayServer::WINDOW_EDGE_TOP_LEFT,
@@ -352,6 +372,20 @@ void CspDiscordRpcGdCppMainControl::_ready()
     UpdateMaximizeButtonIcon();
 }
 
+void CspDiscordRpcGdCppMainControl::_exit_tree()
+{
+    CspDiscordRpcService::Get().Shutdown();
+    PresenceStartTimestamp = 0;
+}
+
+void CspDiscordRpcGdCppMainControl::UpdateStatusText(const godot::String& StatusText) const
+{
+    if (StatusLabel != nullptr)
+    {
+        StatusLabel->set_text(StatusText);
+    }
+}
+
 void CspDiscordRpcGdCppMainControl::SyncToViewportSize()
 {
     set_size(get_viewport_rect().size);
@@ -418,9 +452,7 @@ void CspDiscordRpcGdCppMainControl::UpdateMaximizeButtonIcon()
     MaximizeButton->set_button_icon(GetWindowControlIconTexture(bIsWindowMaximized ? EWindowControlIcon::Restore : EWindowControlIcon::Maximize));
 }
 
-void CspDiscordRpcGdCppMainControl::AddPropertyRow(godot::GridContainer* GridContainer,
-                                                   const godot::String& LabelText,
-                                                   godot::Control* EditorControl)
+void CspDiscordRpcGdCppMainControl::AddPropertyRow(godot::GridContainer* GridContainer, const godot::String& LabelText, godot::Control* EditorControl)
 {
     GridContainer->add_child(CreatePropertyLabel(LabelText));
     GridContainer->add_child(EditorControl);
@@ -455,8 +487,7 @@ void CspDiscordRpcGdCppMainControl::AddResizeHandle(const godot::String& Name,
     add_child(ResizeHandle);
 }
 
-godot::Button* CspDiscordRpcGdCppMainControl::CreateTitleBarButton(const godot::String& Text,
-                                                                   const godot::String& TooltipText) const
+godot::Button* CspDiscordRpcGdCppMainControl::CreateTitleBarButton(const godot::String& Text, const godot::String& TooltipText) const
 {
     godot::Button* TitleBarButton = memnew(godot::Button);
     TitleBarButton->set_name("TitleBarButton");
@@ -489,8 +520,7 @@ godot::Button* CspDiscordRpcGdCppMainControl::CreateWindowControlButton(const go
 void CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput(const godot::Ref<godot::InputEvent>& Event)
 {
     const godot::InputEventMouseButton* MouseButtonEvent = godot::Object::cast_to<const godot::InputEventMouseButton>(*Event);
-    if (MouseButtonEvent == nullptr || MouseButtonEvent->get_button_index() != godot::MOUSE_BUTTON_LEFT ||
-        !MouseButtonEvent->is_pressed())
+    if (MouseButtonEvent == nullptr || MouseButtonEvent->get_button_index() != godot::MOUSE_BUTTON_LEFT || !MouseButtonEvent->is_pressed())
     {
         return;
     }
@@ -518,8 +548,7 @@ void CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput(const godot::Ref<godot::I
 void CspDiscordRpcGdCppMainControl::OnResizeHandleGuiInput(const godot::Ref<godot::InputEvent>& Event, int32_t ResizeEdge)
 {
     const godot::InputEventMouseButton* MouseButtonEvent = godot::Object::cast_to<const godot::InputEventMouseButton>(*Event);
-    if (MouseButtonEvent == nullptr || MouseButtonEvent->get_button_index() != godot::MOUSE_BUTTON_LEFT ||
-        !MouseButtonEvent->is_pressed())
+    if (MouseButtonEvent == nullptr || MouseButtonEvent->get_button_index() != godot::MOUSE_BUTTON_LEFT || !MouseButtonEvent->is_pressed())
     {
         return;
     }
@@ -557,6 +586,64 @@ void CspDiscordRpcGdCppMainControl::OnClosePressed()
     {
         SceneTree->quit();
     }
+}
+
+void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
+{
+
+}
+
+void CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled(bool bToggled)
+{
+    if (bToggled)
+    {
+        static const godot::String CLIENT_ID = "1351785436850163733";
+
+        if (!CspDiscordRpcService::Get().Initialize(CLIENT_ID))
+        {
+            if (DiscordRichPresenceCheckButton != nullptr)
+            {
+                DiscordRichPresenceCheckButton->set_pressed_no_signal(false);
+            }
+
+            UpdateStatusText("Failed to initialize Discord RPC.");
+            return;
+        }
+
+        PresenceStartTimestamp = static_cast<int64_t>(std::time(nullptr));
+        UpdateStatusText("Discord RPC enabled. Press Update Presence to send the latest values.");
+        OnUpdatePresencePressed();
+    }
+    else
+    {
+        CspDiscordRpcService::Get().ClearPresence();
+        CspDiscordRpcService::Get().Shutdown();
+        PresenceStartTimestamp = 0;
+        UpdateStatusText("Discord RPC is disabled.");
+    }
+}
+
+void CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed()
+{
+    if (!CspDiscordRpcService::Get().IsInitialized())
+    {
+        UpdateStatusText("Enable Discord RPC first.");
+        return;
+    }
+
+    DiscordRichPresenceData PresenceData;
+    PresenceData.State = "";
+    PresenceData.Details = "";
+    PresenceData.LargeImageKey = "";
+    PresenceData.LargeImageText = "";
+    PresenceData.SmallImageKey = SmallImageKeyLineEdit != nullptr ? SmallImageKeyLineEdit->get_text() : godot::String();
+    PresenceData.SmallImageText = SmallImageTextLineEdit != nullptr ? SmallImageTextLineEdit->get_text() : godot::String();
+    PresenceData.ButtonLabel = ButtonLabelLineEdit != nullptr ? ButtonLabelLineEdit->get_text() : godot::String();
+    PresenceData.ButtonUrl = ButtonUrlLineEdit != nullptr ? ButtonUrlLineEdit->get_text() : godot::String();
+    PresenceData.StartTimestamp = PresenceStartTimestamp;
+
+    CspDiscordRpcService::Get().UpdatePresence(PresenceData);
+    UpdateStatusText("Presence update sent. Discord must be running locally for it to appear.");
 }
 
 } // namespace CspDiscordRpcGdCpp
