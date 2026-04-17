@@ -51,6 +51,13 @@ protected:
     static void _bind_methods();
 
 private:
+    void LoadPropertySettings();
+    void SavePropertySettings() const;
+    void ApplySelectedCspWorkPath(const godot::String& WorkPath, const godot::String& FallbackWorkName);
+    void OnPropertySettingsChanged();
+    void OnPropertySettingsBoolChanged(bool bValue);
+    void OnPropertySettingsIndexChanged(int32_t Value);
+    void OnPropertySettingsTextChanged(const godot::String& Value);
     void UpdateStatusText(const godot::String& StatusText) const;
     void SyncToViewportSize();
     void CaptureRestoreWindowState();
@@ -110,6 +117,7 @@ private:
     godot::String SelectedCSPWorkPath;
     int64_t PresenceStartTimestamp{ 0 };
     ERichPresenceTextLanguage RichPresenceTextLanguage{ ERichPresenceTextLanguage::English };
+    bool bIsApplyingPropertySettings{ false };
     bool bHasRestoreWindowState{ false };
     bool bIsWindowMaximized{ false };
 };

@@ -53,6 +53,7 @@ namespace
 
 constexpr float ResizeBorderThickness = 3.0f;
 constexpr float ResizeCornerExtent = 12.0f;
+constexpr const char* PropertySettingsFileName = "PropertySettings.json";
 
 using CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkData;
 
@@ -230,6 +231,11 @@ godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& BackgroundC
 {
     const std::wstring Extension = Path.extension().wstring();
     return Extension == L".clip" || Extension == L".cmc" || Extension == L".lip";
+}
+
+[[nodiscard]] std::filesystem::path GetPropertySettingsFilePath()
+{
+    return std::filesystem::current_path() / PropertySettingsFileName;
 }
 
 [[nodiscard]] bool MatchesXmlPath(const std::vector<godot::String>& CurrentPath, std::initializer_list<const char*> ExpectedPath)
@@ -687,6 +693,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     DiscordRichPresenceCheckButton = CreateNamedControl<godot::CheckButton>("DiscordRichPresence");
     DiscordRichPresenceCheckButton->set_text("");
     DiscordRichPresenceCheckButton->connect("toggled", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled));
+    DiscordRichPresenceCheckButton->connect("toggled", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsBoolChanged));
     AddPropertyRow(PropertyGridContainer, "Discord Rich Presence", DiscordRichPresenceCheckButton);
 
     UpdatePresenceButton = CreateNamedControl<godot::Button>("UpdatePresence");
@@ -701,6 +708,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     RichPresenceTextLanguageOptionButton->add_item(godot::String::utf8("简体中文"), static_cast<int32_t>(ERichPresenceTextLanguage::SimplifiedChinese));
     RichPresenceTextLanguageOptionButton->select(static_cast<int32_t>(RichPresenceTextLanguage));
     RichPresenceTextLanguageOptionButton->connect("item_selected", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnRichPresenceTextLanguageSelected));
+    RichPresenceTextLanguageOptionButton->connect("item_selected", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsIndexChanged));
     AddPropertyRow(PropertyGridContainer, "Rich Presence Text Language", RichPresenceTextLanguageOptionButton);
 
     ChooseCSPWorkButton = CreateNamedControl<godot::Button>("ChooseCSPWork");
@@ -711,10 +719,12 @@ void CspDiscordRpcGdCppMainControl::_ready()
     godot::GridContainer* SmallImageGroupGridContainer = CreateCollapsiblePropertyGroup(PropertySectionContainer, "SmallImageGroup", "Small Image", true, {});
     SmallImageKeyLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageKey");
     SmallImageKeyLineEdit->set_placeholder("small_asset_key");
+    SmallImageKeyLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
     AddPropertyRow(SmallImageGroupGridContainer, "Small Image Key", SmallImageKeyLineEdit);
 
     SmallImageTextLineEdit = CreateNamedControl<godot::LineEdit>("SmallImageText");
     SmallImageTextLineEdit->set_placeholder("Drawing something");
+    SmallImageTextLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
     AddPropertyRow(SmallImageGroupGridContainer, "Small Image Text", SmallImageTextLineEdit);
 
     static const godot::String BUTTON_WARNING_TOOLTIPS = "Discord may not show activity buttons on your own profile.\nIt might be worth checking from another account to confirm whether they're visible.";
@@ -726,10 +736,12 @@ void CspDiscordRpcGdCppMainControl::_ready()
                                                                                      BUTTON_WARNING_TOOLTIPS);
     Button1LabelLineEdit = CreateNamedControl<godot::LineEdit>("Button1Label");
     Button1LabelLineEdit->set_placeholder("My Instagram");
+    Button1LabelLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
     AddPropertyRow(Button1GroupGridContainer, "Button1 Label", Button1LabelLineEdit);
 
     Button1UrlLineEdit = CreateNamedControl<godot::LineEdit>("Button1Url");
     Button1UrlLineEdit->set_placeholder("www.instagram.com");
+    Button1UrlLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
     AddPropertyRow(Button1GroupGridContainer, "Button1 URL", Button1UrlLineEdit);
 
     godot::GridContainer* Button2GroupGridContainer = CreateCollapsiblePropertyGroup(PropertySectionContainer,
@@ -739,10 +751,12 @@ void CspDiscordRpcGdCppMainControl::_ready()
                                                                                      BUTTON_WARNING_TOOLTIPS);
     Button2LabelLineEdit = CreateNamedControl<godot::LineEdit>("Button2Label");
     Button2LabelLineEdit->set_placeholder("My X");
+    Button2LabelLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
     AddPropertyRow(Button2GroupGridContainer, "Button2 Label", Button2LabelLineEdit);
 
     Button2UrlLineEdit = CreateNamedControl<godot::LineEdit>("Button2Url");
     Button2UrlLineEdit->set_placeholder("https://x.com");
+    Button2UrlLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
     AddPropertyRow(Button2GroupGridContainer, "Button2 URL", Button2UrlLineEdit);
 
     AddResizeHandle("ResizeTopLeft",
@@ -835,10 +849,12 @@ void CspDiscordRpcGdCppMainControl::_ready()
                     0.0F);
 
     UpdateMaximizeButtonIcon();
+    LoadPropertySettings();
 }
 
 void CspDiscordRpcGdCppMainControl::_exit_tree()
 {
+    SavePropertySettings();
     CspDiscordRpcService::Get().Shutdown();
     PresenceStartTimestamp = 0;
 }
@@ -867,6 +883,177 @@ void CspDiscordRpcGdCppMainControl::SetRichPresenceTextLanguage(int32_t NewRichP
 int32_t CspDiscordRpcGdCppMainControl::GetRichPresenceTextLanguage() const
 {
     return static_cast<int32_t>(RichPresenceTextLanguage);
+}
+
+void CspDiscordRpcGdCppMainControl::LoadPropertySettings()
+{
+    const std::filesystem::path PropertySettingsPath = GetPropertySettingsFilePath();
+    if (!std::filesystem::exists(PropertySettingsPath))
+    {
+        return;
+    }
+
+    std::ifstream PropertySettingsStream(PropertySettingsPath, std::ios::binary);
+    if (!PropertySettingsStream.is_open())
+    {
+        return;
+    }
+
+    const std::string PropertySettingsJson((std::istreambuf_iterator<char>(PropertySettingsStream)), std::istreambuf_iterator<char>());
+    if (PropertySettingsJson.empty())
+    {
+        return;
+    }
+
+    const godot::Variant ParsedJson = godot::JSON::parse_string(godot::String(PropertySettingsJson.c_str()));
+    if (ParsedJson.get_type() != godot::Variant::DICTIONARY)
+    {
+        return;
+    }
+
+    const godot::Dictionary PropertySettings = ParsedJson;
+
+    bIsApplyingPropertySettings = true;
+
+    if (PropertySettings.has("RichPresenceTextLanguage"))
+    {
+        SetRichPresenceTextLanguage(static_cast<int32_t>(PropertySettings["RichPresenceTextLanguage"]));
+    }
+
+    if (PropertySettings.has("SelectedCSPWorkPath"))
+    {
+        ApplySelectedCspWorkPath(static_cast<godot::String>(PropertySettings["SelectedCSPWorkPath"]), {});
+    }
+
+    if (PropertySettings.has("SmallImageKey") && SmallImageKeyLineEdit != nullptr)
+    {
+        SmallImageKeyLineEdit->set_text(static_cast<godot::String>(PropertySettings["SmallImageKey"]));
+    }
+
+    if (PropertySettings.has("SmallImageText") && SmallImageTextLineEdit != nullptr)
+    {
+        SmallImageTextLineEdit->set_text(static_cast<godot::String>(PropertySettings["SmallImageText"]));
+    }
+
+    if (PropertySettings.has("Button1Label") && Button1LabelLineEdit != nullptr)
+    {
+        Button1LabelLineEdit->set_text(static_cast<godot::String>(PropertySettings["Button1Label"]));
+    }
+
+    if (PropertySettings.has("Button1Url") && Button1UrlLineEdit != nullptr)
+    {
+        Button1UrlLineEdit->set_text(static_cast<godot::String>(PropertySettings["Button1Url"]));
+    }
+
+    if (PropertySettings.has("Button2Label") && Button2LabelLineEdit != nullptr)
+    {
+        Button2LabelLineEdit->set_text(static_cast<godot::String>(PropertySettings["Button2Label"]));
+    }
+
+    if (PropertySettings.has("Button2Url") && Button2UrlLineEdit != nullptr)
+    {
+        Button2UrlLineEdit->set_text(static_cast<godot::String>(PropertySettings["Button2Url"]));
+    }
+
+    const bool bDiscordRichPresenceEnabled =
+        PropertySettings.has("DiscordRichPresenceEnabled") ? static_cast<bool>(PropertySettings["DiscordRichPresenceEnabled"]) : false;
+
+    bIsApplyingPropertySettings = false;
+
+    if (DiscordRichPresenceCheckButton != nullptr)
+    {
+        DiscordRichPresenceCheckButton->set_pressed(bDiscordRichPresenceEnabled);
+    }
+}
+
+void CspDiscordRpcGdCppMainControl::SavePropertySettings() const
+{
+    if (bIsApplyingPropertySettings)
+    {
+        return;
+    }
+
+    godot::Dictionary PropertySettings;
+    PropertySettings["RichPresenceTextLanguage"] = static_cast<int32_t>(RichPresenceTextLanguage);
+    PropertySettings["DiscordRichPresenceEnabled"] =
+        DiscordRichPresenceCheckButton != nullptr ? DiscordRichPresenceCheckButton->is_pressed() : false;
+    PropertySettings["SelectedCSPWorkPath"] = SelectedCSPWorkPath;
+    PropertySettings["SmallImageKey"] = SmallImageKeyLineEdit != nullptr ? SmallImageKeyLineEdit->get_text() : godot::String();
+    PropertySettings["SmallImageText"] = SmallImageTextLineEdit != nullptr ? SmallImageTextLineEdit->get_text() : godot::String();
+    PropertySettings["Button1Label"] = Button1LabelLineEdit != nullptr ? Button1LabelLineEdit->get_text() : godot::String();
+    PropertySettings["Button1Url"] = Button1UrlLineEdit != nullptr ? Button1UrlLineEdit->get_text() : godot::String();
+    PropertySettings["Button2Label"] = Button2LabelLineEdit != nullptr ? Button2LabelLineEdit->get_text() : godot::String();
+    PropertySettings["Button2Url"] = Button2UrlLineEdit != nullptr ? Button2UrlLineEdit->get_text() : godot::String();
+
+    std::ofstream PropertySettingsStream(GetPropertySettingsFilePath(), std::ios::binary | std::ios::trunc);
+    if (!PropertySettingsStream.is_open())
+    {
+        return;
+    }
+
+    const godot::String PropertySettingsJson = godot::JSON::stringify(PropertySettings, "  ");
+    PropertySettingsStream << PropertySettingsJson.utf8().get_data();
+}
+
+void CspDiscordRpcGdCppMainControl::ApplySelectedCspWorkPath(const godot::String& WorkPath, const godot::String& FallbackWorkName)
+{
+    SelectedCSPWorkPath = WorkPath;
+    SelectedCspWorkData = {};
+
+    godot::String DisplayWorkName = FallbackWorkName;
+
+    if (!WorkPath.is_empty())
+    {
+        SelectedCspWorkData = GetCspWorkCacheData(ToPath(WorkPath));
+        if (SelectedCspWorkData.Name.is_empty())
+        {
+            SelectedCspWorkData.Name = FallbackWorkName;
+        }
+
+        if (DisplayWorkName.is_empty())
+        {
+            DisplayWorkName = SelectedCspWorkData.Name;
+        }
+
+        if (DisplayWorkName.is_empty())
+        {
+            DisplayWorkName = ToGodotString(ToPath(WorkPath).stem());
+        }
+    }
+
+    if (ChooseCSPWorkButton != nullptr)
+    {
+        ChooseCSPWorkButton->set_text(DisplayWorkName.is_empty() ? godot::String("Browse") : DisplayWorkName);
+        ChooseCSPWorkButton->set_tooltip_text(WorkPath);
+    }
+
+    if (!WorkPath.is_empty())
+    {
+        UpdateStatusText(godot::vformat("Selected CSP work: %s", DisplayWorkName));
+    }
+}
+
+void CspDiscordRpcGdCppMainControl::OnPropertySettingsChanged()
+{
+    SavePropertySettings();
+}
+
+void CspDiscordRpcGdCppMainControl::OnPropertySettingsBoolChanged(bool bValue)
+{
+    static_cast<void>(bValue);
+    OnPropertySettingsChanged();
+}
+
+void CspDiscordRpcGdCppMainControl::OnPropertySettingsIndexChanged(int32_t Value)
+{
+    static_cast<void>(Value);
+    OnPropertySettingsChanged();
+}
+
+void CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged(const godot::String& Value)
+{
+    static_cast<void>(Value);
+    OnPropertySettingsChanged();
 }
 
 void CspDiscordRpcGdCppMainControl::UpdateStatusText(const godot::String& StatusText) const
@@ -1197,21 +1384,8 @@ void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
 
 void CspDiscordRpcGdCppMainControl::OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath)
 {
-    SelectedCspWorkData = GetCspWorkCacheData(ToPath(WorkPath));
-    if (SelectedCspWorkData.Name.is_empty())
-    {
-        SelectedCspWorkData.Name = WorkName;
-    }
-
-    SelectedCSPWorkPath = WorkPath;
-
-    if (ChooseCSPWorkButton != nullptr)
-    {
-        ChooseCSPWorkButton->set_text(WorkName.is_empty() ? godot::String("Browse") : WorkName);
-        ChooseCSPWorkButton->set_tooltip_text(WorkPath);
-    }
-
-    UpdateStatusText(godot::vformat("Selected CSP work: %s", WorkName));
+    ApplySelectedCspWorkPath(WorkPath, WorkName);
+    SavePropertySettings();
 }
 
 void CspDiscordRpcGdCppMainControl::OnWorksWindowTreeExited()
