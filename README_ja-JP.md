@@ -42,3 +42,7 @@
 
 4. Discord Rich Presence を有効にします  
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/TurnOnRichPresence.png">
+
+## サポートお願いします
+
+[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kakuun333)
