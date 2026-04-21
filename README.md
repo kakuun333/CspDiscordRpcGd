@@ -43,6 +43,11 @@
 4. Turn on Discord Rich Presence  
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/TurnOnRichPresence.png">
 
+## Credits
+
+- [godotengine/godot-cpp](https://github.com/godotengine/godot-cpp)
+- [EclipseMenu/discord-presence](https://github.com/EclipseMenu/discord-presence)
+
 ## Support me
 
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kakuun333)
