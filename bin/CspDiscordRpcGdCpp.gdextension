@@ -1,0 +1,14 @@
+[configuration]
+
+entry_symbol = "CspDiscordRpcGdCppEntryPoint"
+compatibility_minimum = "4.1"
+
+[libraries]
+
+# macos.debug = "res://bin/libgdexample.macos.debug.framework"
+# macos.release = "res://bin/libgdexample.macos.release.framework"
+windows.debug.x86_64 = "res://bin/CspDiscordRpcGdCpp.windows.debug.x86_64.dll"
+windows.release.x86_64 = "res://bin/CspDiscordRpcGdCpp.windows.release.x86_64.dll"
+# linux.debug.x86_64 = "res://bin/libgdexample.linux.debug.x86_64.so"
+# linux.release.x86_64 = "res://bin/libgdexample.linux.release.x86_64.so"
+# Repeat for other architectures to support arm64, rv64, etc.

@@ -52,6 +52,7 @@ set(GODOT_CPP_LIB_DIR "${GODOT_CPP_DIR}/bin")
 set(DISCORD_PRESENCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/discord-presence")
 set(GLAZE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/glaze")
 
+# Generate Resource SVG
 set(RESOURCE_SVG_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/ActionCopy.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Close.svg"
@@ -93,14 +94,14 @@ function(append_embedded_svg ResourceSvgName ResourceSvgFile)
 endfunction()
 
 file(MAKE_DIRECTORY "${GENERATED_SVG_DIR}")
-file(WRITE "${GENERATED_SVG_HEADER}" "#pragma once\n\nnamespace CspDiscordRpcGdCpp::EmbeddedSvgResources\n{\n")
+file(WRITE "${GENERATED_SVG_HEADER}" "#pragma once\n\nnamespace ${PROJECT_NAME}::EmbeddedSvgResources\n{\n")
 
 foreach(ResourceSvgFile IN LISTS RESOURCE_SVG_FILES)
     get_filename_component(ResourceSvgName "${ResourceSvgFile}" NAME_WE)
     append_embedded_svg("${ResourceSvgName}" "${ResourceSvgFile}")
 endforeach()
 
-file(APPEND "${GENERATED_SVG_HEADER}" "} // namespace CspDiscordRpcGdCpp::EmbeddedSvgResources\n")
+file(APPEND "${GENERATED_SVG_HEADER}" "} // namespace ${PROJECT_NAME}::EmbeddedSvgResources\n")
 
 set(DISCORD_RPC_BUILD_TESTS OFF CACHE BOOL "Build discord-presence tests" FORCE)
 add_subdirectory("${GLAZE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Dependencies/glaze")
