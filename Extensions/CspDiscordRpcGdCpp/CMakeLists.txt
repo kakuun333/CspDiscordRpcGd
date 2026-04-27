@@ -110,20 +110,20 @@ add_subdirectory("${DISCORD_PRESENCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Dependen
 # Create a Dynamic Link Library Target
 # Note: Godot requires GDExtension to be either a MODULE or SHARED library.
 add_library(${PROJECT_NAME} SHARED
-        Source/Main/RegisterTypes.cpp
-        Source/Main/CspDiscordRpcService.cpp
-        Source/Main/CspDiscordRpcService.h
-        Source/Main/CspDiscordRpcGdCppMainControl.cpp
-        Source/Main/CspDiscordRpcGdCppMainControl.h
-        Source/Main/CspDiscordRpcGdCppCloseWindow.cpp
-        Source/Main/CspDiscordRpcGdCppCloseWindow.h
-        Source/Main/CspDiscordRpcGdCppWorkData.h
-        Source/Main/CspDiscordRpcGdCppWorkItem.cpp
-        Source/Main/CspDiscordRpcGdCppWorkItem.h
-        Source/Main/CspDiscordRpcGdCppWorksWindow.cpp
-        Source/Main/CspDiscordRpcGdCppWorksWindow.h
-        Source/Main/CspDiscordRpcGdCppFunctionLibrary.cpp
-        Source/Main/CspDiscordRpcGdCppFunctionLibrary.h
+        Source/RegisterTypes.cpp
+        Source/CspDiscordRpcService.cpp
+        Source/CspDiscordRpcService.h
+        Source/CspDiscordRpcGdCppMainControl.cpp
+        Source/CspDiscordRpcGdCppMainControl.h
+        Source/CspDiscordRpcGdCppCloseWindow.cpp
+        Source/CspDiscordRpcGdCppCloseWindow.h
+        Source/CspDiscordRpcGdCppWorkData.h
+        Source/CspDiscordRpcGdCppWorkItem.cpp
+        Source/CspDiscordRpcGdCppWorkItem.h
+        Source/CspDiscordRpcGdCppWorksWindow.cpp
+        Source/CspDiscordRpcGdCppWorksWindow.h
+        Source/CspDiscordRpcGdCppFunctionLibrary.cpp
+        Source/CspDiscordRpcGdCppFunctionLibrary.h
         ${GENERATED_SVG_HEADER}
 )
 
