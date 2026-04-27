@@ -1,27 +1,28 @@
-# Godot 4+ specific ignores
-.godot/
-.nomedia
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+CMakeUserPresets.json
+bin
+build
+Binary
 
-# Godot-specific ignores
-.import/
-export.cfg
-export_credentials.cfg
+# JetBrains
+.idea
 
-# Imported translations (automatically generated from CSV files)
-*.translation
-
-# Mono-specific ignores
-.mono/
-data_*/
-mono_crash.*.json
-
-# Jetbrains
-.idea/
+# VisualStudio
+.vs
 
 # codex
-cmake-build-codex-check
-build_codex_check
+cmake-build-codex
 
-# Binary Files
-*.dll
-*.pdb
+# CspDiscordRpcGd
+Settings.json

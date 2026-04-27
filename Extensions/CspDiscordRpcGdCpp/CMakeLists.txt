@@ -2,53 +2,14 @@ cmake_minimum_required(VERSION 3.25)
 
 project(CspDiscordRpcGdCpp LANGUAGES CXX)
 
-# --- Compiler ---
-set(COMPILER_IS_CLANG "$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>")
-set(COMPILER_IS_GNU "$<CXX_COMPILER_ID:GNU>")
-set(COMPILER_IS_MSVC "$<CXX_COMPILER_ID:MSVC>")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
+include(BuildDefaults)
+include(EmbeddedSvgResources)
+include(GodotExtension)
 
-# --- Platform ---
-if(WIN32)
-    set(PLATFORM "windows")
-elseif(APPLE)
-    set(PLATFORM "macos")
-elseif(UNIX)
-    set(PLATFORM "linux")
-endif()
+configure_cpp_defaults(STANDARD 23)
+detect_godot_platform(PLATFORM ARCH)
 
-# --- Architecture ---
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|AMD64)")
-    set(ARCH "x86_64")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-    set(ARCH "arm64")
-else()
-    set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
-endif()
-
-if(COMPILER_IS_MSVC)
-    add_compile_options("/utf-8")
-
-    # Force CMake to Use Static Runtime Library (/MT and /MTd)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
-    add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
-
-
-    # Keep this policy setting; it's very helpful for Debug mode.
-    if(POLICY CMP0141)
-        cmake_policy(SET CMP0141 NEW)
-        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
-                "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>"
-        )
-    endif()
-endif()
-
-# Set C++ Standard (GDExtension typically requires C++17 or higher)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(GODOT_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/godot-cpp")
-set(GODOT_CPP_INCLUDE "${GODOT_CPP_DIR}/include")
-set(GODOT_CPP_LIB_DIR "${GODOT_CPP_DIR}/bin")
 set(DISCORD_PRESENCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/discord-presence")
 set(GLAZE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/glaze")
 
@@ -63,45 +24,13 @@ set(RESOURCE_SVG_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/NodeWarning.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CspDiscordRpcGd.svg"
 )
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${RESOURCE_SVG_FILES})
 
-set(GENERATED_SVG_DIR "${CMAKE_CURRENT_BINARY_DIR}/Generated")
-set(GENERATED_SVG_HEADER "${GENERATED_SVG_DIR}/EmbeddedSvgResources.h")
+generate_embedded_svg_header(GENERATED_SVG_HEADER
+        NAMESPACE "${PROJECT_NAME}::EmbeddedSvgResources"
+        FILES ${RESOURCE_SVG_FILES}
+)
+get_filename_component(GENERATED_DIR "${GENERATED_SVG_HEADER}" DIRECTORY)
 
-function(append_embedded_svg ResourceSvgName ResourceSvgFile)
-    set(ResourceSvgChunkSize 12000)
-    file(READ "${ResourceSvgFile}" ResourceSvgContent)
-    string(LENGTH "${ResourceSvgContent}" ResourceSvgContentLength)
-
-    file(APPEND "${GENERATED_SVG_HEADER}" "inline constexpr const char* ${ResourceSvgName} =\n")
-
-    set(ResourceSvgOffset 0)
-    while(ResourceSvgOffset LESS ResourceSvgContentLength)
-        math(EXPR ResourceSvgRemainingLength "${ResourceSvgContentLength} - ${ResourceSvgOffset}")
-
-        if(ResourceSvgRemainingLength GREATER ResourceSvgChunkSize)
-            set(ResourceSvgCurrentChunkLength ${ResourceSvgChunkSize})
-        else()
-            set(ResourceSvgCurrentChunkLength ${ResourceSvgRemainingLength})
-        endif()
-
-        string(SUBSTRING "${ResourceSvgContent}" ${ResourceSvgOffset} ${ResourceSvgCurrentChunkLength} ResourceSvgChunk)
-        file(APPEND "${GENERATED_SVG_HEADER}" "R\"__CSP_SVG__(${ResourceSvgChunk})__CSP_SVG__\"\n")
-        math(EXPR ResourceSvgOffset "${ResourceSvgOffset} + ${ResourceSvgCurrentChunkLength}")
-    endwhile()
-
-    file(APPEND "${GENERATED_SVG_HEADER}" ";\n")
-endfunction()
-
-file(MAKE_DIRECTORY "${GENERATED_SVG_DIR}")
-file(WRITE "${GENERATED_SVG_HEADER}" "#pragma once\n\nnamespace ${PROJECT_NAME}::EmbeddedSvgResources\n{\n")
-
-foreach(ResourceSvgFile IN LISTS RESOURCE_SVG_FILES)
-    get_filename_component(ResourceSvgName "${ResourceSvgFile}" NAME_WE)
-    append_embedded_svg("${ResourceSvgName}" "${ResourceSvgFile}")
-endforeach()
-
-file(APPEND "${GENERATED_SVG_HEADER}" "} // namespace ${PROJECT_NAME}::EmbeddedSvgResources\n")
 
 set(DISCORD_RPC_BUILD_TESTS OFF CACHE BOOL "Build discord-presence tests" FORCE)
 add_subdirectory("${GLAZE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Dependencies/glaze")
@@ -137,65 +66,36 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         ${GODOT_CPP_DIR}/gen/include
 )
 
-# Linking
-find_library(GODOT_CPP_LIB_DEBUG
-        NAMES libgodot-cpp.windows.template_debug.dev.x86_64
-        PATHS ${GODOT_CPP_LIB_DIR}
+target_godot_cpp(${PROJECT_NAME}
+        PLATFORM "${PLATFORM}"
+        ARCH "${ARCH}"
 )
 
-find_library(GODOT_CPP_LIB_RELEASE
-        NAMES libgodot-cpp.windows.template_release.x86_64
-        PATHS ${GODOT_CPP_LIB_DIR}
+set_gdextension_output(${PROJECT_NAME}
+        PLATFORM "${PLATFORM}"
+        ARCH "${ARCH}"
+        OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Binary"
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:${GODOT_CPP_LIB_DEBUG}>
-        $<$<CONFIG:RelWithDebInfo>:${GODOT_CPP_LIB_DEBUG}>
-        $<$<CONFIG:Release>:${GODOT_CPP_LIB_RELEASE}>
         discord-rpc
         glaze::glaze
 )
 
-# The godot_cpp macros need to define
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-        $<$<CONFIG:Debug>:
-        DEBUG_ENABLED
-        DEBUG_METHODS_ENABLED
-        >
-        $<${COMPILER_IS_MSVC}:
-        TYPED_METHOD_BIND
-        >
-)
-
-# Build type
-set(BUILD_TYPE "$<LOWER_CASE:$<CONFIG>>")
-
-# Final output name
-set(OUTPUT_NAME "${PROJECT_NAME}.${PLATFORM}.${BUILD_TYPE}.${ARCH}")
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-        PREFIX ""
-        OUTPUT_NAME "${OUTPUT_NAME}"
-)
-
-if(COMPILER_IS_MSVC)
-    target_link_options(${PROJECT_NAME} PRIVATE
-            $<$<CONFIG:Debug,RelWithDebInfo>:/DEBUG:FULL>
-    )
-
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-            PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-            COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    )
-endif()
-
 if(GODOT_PROJECT_BIN_DIR)
+    cmake_path(CONVERT "${GODOT_PROJECT_BIN_DIR}" TO_CMAKE_PATH_LIST GODOT_PROJECT_BIN_DIR_CMAKE)
+    set(COPY_BINARY_DLLS_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/CopyBinaryDlls.cmake")
+    file(WRITE "${COPY_BINARY_DLLS_SCRIPT}"
+            "file(GLOB BinaryDlls LIST_DIRECTORIES false \"${CMAKE_CURRENT_SOURCE_DIR}/Binary/*.dll\")\n"
+            "if(BinaryDlls)\n"
+            "    file(COPY \${BinaryDlls} DESTINATION \"${GODOT_PROJECT_BIN_DIR_CMAKE}\")\n"
+            "endif()\n"
+    )
+
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "${GODOT_PROJECT_BIN_DIR}"
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:${PROJECT_NAME}>"
-            "${GODOT_PROJECT_BIN_DIR}/$<TARGET_FILE_NAME:${PROJECT_NAME}>"
-            COMMENT "Copying compiled output to ${GODOT_PROJECT_BIN_DIR}"
+            COMMAND ${CMAKE_COMMAND} -P "${COPY_BINARY_DLLS_SCRIPT}"
+            COMMENT "Copying Binary/*.dll to ${GODOT_PROJECT_BIN_DIR}"
     )
 else()
     message(WARNING "GODOT_PROJECT_BIN_DIR is not defined. Please set it as a CMake Cache Variable, otherwise automatic deployment of dynamic libraries will be skipped.")
