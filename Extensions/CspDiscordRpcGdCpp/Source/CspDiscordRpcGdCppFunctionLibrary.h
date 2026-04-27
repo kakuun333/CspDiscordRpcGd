@@ -15,7 +15,6 @@ protected:
 
 public:
     static void ConfigureMainWindow();
-    static godot::Control* BuildMainControl();
 };
 
 } // namespace CspDiscordRpcGdCpp

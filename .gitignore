@@ -16,4 +16,9 @@ export_credentials.cfg
 ~*.dll
 ~*.pdb
 
+# Godot Export
 Export/
+
+# CspDiscordRpcGd
+Settings.json
+

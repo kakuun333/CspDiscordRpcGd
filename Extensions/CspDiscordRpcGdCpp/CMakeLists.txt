@@ -15,14 +15,14 @@ set(GLAZE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/glaze")
 
 # Generate Resource SVG
 set(RESOURCE_SVG_FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/ActionCopy.svg"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Close.svg"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CodeFoldDownArrow.svg"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CodeFoldedRightArrow.svg"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CurveConstant.svg"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/PanelContainer.svg"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/NodeWarning.svg"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/CspDiscordRpcGd.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Icon.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Restore.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Close.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Expand.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Collapse.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Minimize.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Maximize.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Warning.svg"
 )
 
 generate_embedded_svg_header(GENERATED_SVG_HEADER

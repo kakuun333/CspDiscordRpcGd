@@ -13,6 +13,7 @@ config_version=5
 config/name="CspDiscordRpcGd"
 run/main_scene="uid://d4f7evr46uyiu"
 config/features=PackedStringArray("4.6", "Forward Plus")
+boot_splash/show_image=false
 config/icon="res://icon.svg"
 
 [display]

@@ -22,7 +22,6 @@
 #include "godot_cpp/classes/os.hpp"
 #include "godot_cpp/classes/panel_container.hpp"
 #include "godot_cpp/classes/popup_menu.hpp"
-#include "godot_cpp/classes/project_settings.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/scroll_container.hpp"
 #include "godot_cpp/classes/status_indicator.hpp"
@@ -66,18 +65,6 @@ constexpr const char* SettingsFileName = "Settings.json";
 
 using CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkData;
 
-enum class EWindowControlIcon : uint8_t
-{
-    Minimize,
-    Maximize,
-    Restore,
-    Close,
-    Warning,
-    FoldExpanded,
-    FoldCollapsed,
-    CspDiscordRpcGd,
-};
-
 enum class ERichPresenceTextType : uint8_t
 {
     State,
@@ -91,34 +78,8 @@ enum class EWindowControlButtonStyle : int32_t
     Close,
 };
 
-[[nodiscard]] godot::String GetEmbeddedSvgContent(EWindowControlIcon Icon)
+[[nodiscard]] godot::Ref<godot::Texture2D> CreateTextureFromSvg(const godot::String SvgContent)
 {
-    switch (Icon)
-    {
-        case EWindowControlIcon::Minimize:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::CurveConstant;
-        case EWindowControlIcon::Maximize:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::PanelContainer;
-        case EWindowControlIcon::Restore:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::ActionCopy;
-        case EWindowControlIcon::Close:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::Close;
-        case EWindowControlIcon::Warning:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::NodeWarning;
-        case EWindowControlIcon::FoldExpanded:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::CodeFoldDownArrow;
-        case EWindowControlIcon::FoldCollapsed:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::CodeFoldedRightArrow;
-        case EWindowControlIcon::CspDiscordRpcGd:
-            return CspDiscordRpcGdCpp::EmbeddedSvgResources::CspDiscordRpcGd;
-        default:
-            return {};
-    }
-}
-
-[[nodiscard]] godot::Ref<godot::Texture2D> CreateTextureFromEmbeddedSvg(EWindowControlIcon Icon)
-{
-    const godot::String SvgContent = GetEmbeddedSvgContent(Icon);
     ERR_FAIL_COND_V_MSG(SvgContent.is_empty(), {}, "Missing embedded SVG content.");
 
     godot::Ref<godot::Image> Image;
@@ -127,63 +88,7 @@ enum class EWindowControlButtonStyle : int32_t
     const godot::Error LoadError = Image->load_svg_from_string(SvgContent, 1.0f);
     ERR_FAIL_COND_V_MSG(LoadError != godot::OK, {}, godot::vformat("Failed to load embedded SVG. Error code: %d", static_cast<int32_t>(LoadError)));
 
-    if (Icon == EWindowControlIcon::Restore)
-    {
-        Image->rotate_90(godot::CLOCKWISE);
-    }
-
     return godot::ImageTexture::create_from_image(Image);
-}
-
-[[nodiscard]] const godot::Ref<godot::Texture2D>& GetWindowControlIconTexture(EWindowControlIcon Icon)
-{
-    static godot::Ref<godot::Texture2D> MinimizeIconTexture;
-    static godot::Ref<godot::Texture2D> MaximizeIconTexture;
-    static godot::Ref<godot::Texture2D> RestoreIconTexture;
-    static godot::Ref<godot::Texture2D> CloseIconTexture;
-    static godot::Ref<godot::Texture2D> WarningIconTexture;
-    static godot::Ref<godot::Texture2D> FoldExpandedIconTexture;
-    static godot::Ref<godot::Texture2D> FoldCollapsedIconTexture;
-    static godot::Ref<godot::Texture2D> CspDiscordRpcGdIconTexture;
-
-    godot::Ref<godot::Texture2D>* IconTexture = nullptr;
-
-    switch (Icon)
-    {
-        case EWindowControlIcon::Minimize:
-            IconTexture = &MinimizeIconTexture;
-            break;
-        case EWindowControlIcon::Maximize:
-            IconTexture = &MaximizeIconTexture;
-            break;
-        case EWindowControlIcon::Restore:
-            IconTexture = &RestoreIconTexture;
-            break;
-        case EWindowControlIcon::Close:
-            IconTexture = &CloseIconTexture;
-            break;
-        case EWindowControlIcon::Warning:
-            IconTexture = &WarningIconTexture;
-            break;
-        case EWindowControlIcon::FoldExpanded:
-            IconTexture = &FoldExpandedIconTexture;
-            break;
-        case EWindowControlIcon::FoldCollapsed:
-            IconTexture = &FoldCollapsedIconTexture;
-            break;
-        case EWindowControlIcon::CspDiscordRpcGd:
-            IconTexture = &CspDiscordRpcGdIconTexture;
-            break;
-        default:
-            return MinimizeIconTexture;
-    }
-
-    if (!IconTexture->is_valid())
-    {
-        *IconTexture = CreateTextureFromEmbeddedSvg(Icon);
-    }
-
-    return *IconTexture;
 }
 
 godot::Label* CreatePropertyLabel(const godot::String& Text)
@@ -702,7 +607,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     TitleBarIcon->set_custom_minimum_size(godot::Vector2(20.0f, 20.0f));
     TitleBarIcon->set_stretch_mode(godot::TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
     TitleBarIcon->set_expand_mode(godot::TextureRect::EXPAND_IGNORE_SIZE);
-    TitleBarIcon->set_texture(GetWindowControlIconTexture(EWindowControlIcon::CspDiscordRpcGd));
+    TitleBarIcon->set_texture(CreateTextureFromSvg(EmbeddedSvgResources::Icon));
 
     TitleBarIconMargin->add_child(TitleBarIcon);
     TitleBarContainer->add_child(TitleBarIconMargin);
@@ -711,7 +616,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     TitleBarButton->connect("gui_input", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput));
     TitleBarContainer->add_child(TitleBarButton);
 
-    MinimizeButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Minimize), "Minimize");
+    MinimizeButton = CreateWindowControlButton(CreateTextureFromSvg(EmbeddedSvgResources::Minimize), "Minimize");
     SetWindowControlButtonHighlight(MinimizeButton, godot::Color(0.0f, 0.0f, 0.0f, 0.0f));
     MinimizeButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnMinimizePressed));
     MinimizeButton->connect("mouse_entered",
@@ -720,7 +625,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     MinimizeButton->connect("mouse_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited).bind(MinimizeButton));
     TitleBarContainer->add_child(MinimizeButton);
 
-    MaximizeButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Maximize), "Toggle maximize");
+    MaximizeButton = CreateWindowControlButton(CreateTextureFromSvg(EmbeddedSvgResources::Maximize), "Toggle maximize");
     SetWindowControlButtonHighlight(MaximizeButton, godot::Color(0.0f, 0.0f, 0.0f, 0.0f));
     MaximizeButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnMaximizePressed));
     MaximizeButton->connect("mouse_entered",
@@ -729,7 +634,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     MaximizeButton->connect("mouse_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited).bind(MaximizeButton));
     TitleBarContainer->add_child(MaximizeButton);
 
-    CloseButton = CreateWindowControlButton(GetWindowControlIconTexture(EWindowControlIcon::Close), "Close");
+    CloseButton = CreateWindowControlButton(CreateTextureFromSvg(EmbeddedSvgResources::Close), "Close");
     SetWindowControlButtonHighlight(CloseButton, godot::Color(0.0f, 0.0f, 0.0f, 0.0f));
     CloseButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnClosePressed));
     CloseButton->connect("mouse_entered",
@@ -1199,7 +1104,7 @@ void CspDiscordRpcGdCppMainControl::EnsureCloseStatusIndicator()
     CloseStatusIndicator->set_name("CloseStatusIndicator");
     CloseStatusIndicator->set_visible(false);
     CloseStatusIndicator->set_tooltip("CspDiscordRpcGd");
-    CloseStatusIndicator->set_icon(GetWindowControlIconTexture(EWindowControlIcon::CspDiscordRpcGd));
+    CloseStatusIndicator->set_icon(CreateTextureFromSvg(EmbeddedSvgResources::Icon));
     CloseStatusIndicator->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorPressed));
 
     CloseStatusIndicatorMenu = memnew(godot::PopupMenu);
@@ -1340,7 +1245,7 @@ void CspDiscordRpcGdCppMainControl::UpdateMaximizeButtonIcon()
         return;
     }
 
-    MaximizeButton->set_button_icon(GetWindowControlIconTexture(bIsWindowMaximized ? EWindowControlIcon::Restore : EWindowControlIcon::Maximize));
+    MaximizeButton->set_button_icon(CreateTextureFromSvg(bIsWindowMaximized ? EmbeddedSvgResources::Restore : EmbeddedSvgResources::Maximize));
 }
 
 void CspDiscordRpcGdCppMainControl::AddPropertyRow(godot::GridContainer* GridContainer, const godot::String& LabelText, godot::Control* EditorControl)
@@ -1373,7 +1278,7 @@ godot::GridContainer* CspDiscordRpcGdCppMainControl::CreateCollapsiblePropertyGr
     ToggleButton->set_flat(true);
     ToggleButton->set_focus_mode(godot::Control::FOCUS_NONE);
     ToggleButton->set_custom_minimum_size(godot::Vector2(20.0F, 20.0F));
-    ToggleButton->set_button_icon(GetWindowControlIconTexture(bExpandedByDefault ? EWindowControlIcon::FoldExpanded : EWindowControlIcon::FoldCollapsed));
+    ToggleButton->set_button_icon(CreateTextureFromSvg(bExpandedByDefault ? EmbeddedSvgResources::Expand : EmbeddedSvgResources::Collapse));
     ToggleButton->set_tooltip_text(bExpandedByDefault ? godot::String("Collapse") : godot::String("Expand"));
     HeaderContainer->add_child(ToggleButton);
 
@@ -1429,7 +1334,7 @@ godot::TextureRect* CspDiscordRpcGdCppMainControl::CreateHeaderWarningIcon(const
 
     if (!WarningIcon->get_texture().is_valid())
     {
-        WarningIcon->set_texture(GetWindowControlIconTexture(EWindowControlIcon::Warning));
+        WarningIcon->set_texture(CreateTextureFromSvg(EmbeddedSvgResources::Warning));
     }
 
     return WarningIcon;
@@ -1726,7 +1631,7 @@ void CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled(godot::But
 
     const bool bShouldExpand = !ContentContainer->is_visible();
     ContentContainer->set_visible(bShouldExpand);
-    ToggleButton->set_button_icon(GetWindowControlIconTexture(bShouldExpand ? EWindowControlIcon::FoldExpanded : EWindowControlIcon::FoldCollapsed));
+    ToggleButton->set_button_icon(CreateTextureFromSvg(bShouldExpand ? EmbeddedSvgResources::Expand : EmbeddedSvgResources::Collapse));
     ToggleButton->set_tooltip_text(bShouldExpand ? godot::String("Collapse") : godot::String("Expand"));
 }
 
