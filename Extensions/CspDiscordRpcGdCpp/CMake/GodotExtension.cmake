@@ -49,6 +49,12 @@ function(target_godot_cpp target)
             $<$<CONFIG:Debug>:
             DEBUG_ENABLED
             DEBUG_METHODS_ENABLED
+            TOOLS_ENABLED
+            >
+            $<$<CONFIG:RelWithDebInfo>:
+            DEBUG_ENABLED
+            DEBUG_METHODS_ENABLED
+            TOOLS_ENABLED
             >
             $<$<CXX_COMPILER_ID:MSVC>:
             TYPED_METHOD_BIND
