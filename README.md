@@ -1,7 +1,7 @@
 # CspDiscordRpcGd
 
 <p align="center">
-  <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Icon.svg">
+  <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Icon.svg">
 </p>
 <h3 align="center">CspDiscordRpcGd</h1>
 <h4 align="center">
@@ -29,19 +29,19 @@
 ## Usage
 
 1. Run `CspDiscordRpcGd.exe`  
-   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/ProgramGUI.png">
+   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/ProgramGui.png">
 
 2. (Optional, but recommended) Choose a CSP work to show more detailed information in your Discord Rich Presence  
-   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/ChooseWork.png">
+   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/ChooseWork.png">
 
 3. Choose your preferred language for the Rich Presence text  
-   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_English.png">
-   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_Japanese.png">
-   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_TraditionalChinese.png">
-   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/Presence_SimplifiedChinese.png">
+   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_English.png">
+   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_Japanese.png">
+   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_TraditionalChinese.png">
+   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_SimplifiedChinese.png">
 
 4. Turn on Discord Rich Presence  
-   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Image/TurnOnRichPresence.png">
+   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/TurnOnRichPresence.png">
 
 ## Credits
 
