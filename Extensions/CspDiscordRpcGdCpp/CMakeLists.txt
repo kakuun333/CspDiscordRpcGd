@@ -23,6 +23,9 @@ set(RESOURCE_SVG_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Minimize.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Maximize.svg"
         "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Warning.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Home.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Settings.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/Menu.svg"
 )
 
 generate_embedded_svg_header(GENERATED_SVG_HEADER
