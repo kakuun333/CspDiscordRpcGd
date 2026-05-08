@@ -22,18 +22,6 @@
 namespace
 {
 
-[[nodiscard]] godot::Ref<godot::StyleBoxFlat> CreateTransparentStyle()
-{
-    godot::Ref<godot::StyleBoxFlat> Style;
-    Style.instantiate();
-    Style->set_bg_color(godot::Color::hex(0x00000000));
-    Style->set_content_margin(godot::SIDE_LEFT, 0.0F);
-    Style->set_content_margin(godot::SIDE_TOP, 0.0F);
-    Style->set_content_margin(godot::SIDE_RIGHT, 0.0F);
-    Style->set_content_margin(godot::SIDE_BOTTOM, 0.0F);
-    return Style;
-}
-
 [[nodiscard]] godot::Ref<godot::StyleBoxFlat> CreateDialogPanelStyle()
 {
     godot::Ref<godot::StyleBoxFlat> Style;
@@ -74,24 +62,6 @@ namespace
     Style->set_content_margin(godot::SIDE_RIGHT, 10.0F);
     Style->set_content_margin(godot::SIDE_BOTTOM, 7.0F);
     return Style;
-}
-
-void ApplyTitleBarButtonVisualStyle(godot::Button* ButtonNode)
-{
-    if (ButtonNode == nullptr)
-    {
-        return;
-    }
-
-    ButtonNode->add_theme_font_size_override("font_size", 15);
-    ButtonNode->add_theme_color_override("font_color", godot::Color::hex(0xffffffff));
-    ButtonNode->add_theme_color_override("font_hover_color", godot::Color::hex(0xffffffff));
-    ButtonNode->add_theme_color_override("font_pressed_color", godot::Color::hex(0xffffffff));
-    ButtonNode->add_theme_color_override("font_focus_color", godot::Color::hex(0xffffffff));
-    ButtonNode->add_theme_stylebox_override("normal", CreateTransparentStyle());
-    ButtonNode->add_theme_stylebox_override("hover", CreateTransparentStyle());
-    ButtonNode->add_theme_stylebox_override("pressed", CreateTransparentStyle());
-    ButtonNode->add_theme_stylebox_override("focus", CreateTransparentStyle());
 }
 
 void ApplyButtonVisualStyle(godot::Button* ButtonNode, const bool bPrimary = false)
@@ -143,19 +113,30 @@ void ApplyLineEditVisualStyle(godot::LineEdit* LineEditNode)
     LineEditNode->add_theme_color_override("caret_color", godot::Color::hex(0x9fcef7ff));
 }
 
-[[nodiscard]] godot::Button* CreateTitleBarButton(const godot::String& Text)
+void ApplyTitleBarLabelVisualStyle(godot::Label* LabelNode)
 {
-    godot::Button* TitleBarButton{ memnew(godot::Button) };
-    TitleBarButton->set_name("TitleBarButton");
-    TitleBarButton->set_text(Text);
-    TitleBarButton->set_flat(true);
-    TitleBarButton->set_focus_mode(godot::Control::FOCUS_NONE);
-    TitleBarButton->set_clip_text(true);
-    TitleBarButton->set_text_alignment(godot::HORIZONTAL_ALIGNMENT_LEFT);
-    TitleBarButton->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    TitleBarButton->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    ApplyTitleBarButtonVisualStyle(TitleBarButton);
-    return TitleBarButton;
+    if (LabelNode == nullptr)
+    {
+        return;
+    }
+
+    LabelNode->add_theme_font_size_override("font_size", 15);
+    LabelNode->add_theme_color_override("font_color", godot::Color::hex(0xffffffff));
+}
+
+[[nodiscard]] godot::Label* CreateTitleBarLabel(const godot::String& Text)
+{
+    godot::Label* TitleBarLabel{ memnew(godot::Label) };
+    TitleBarLabel->set_name("TitleBarLabel");
+    TitleBarLabel->set_text(Text);
+    TitleBarLabel->set_clip_text(true);
+    TitleBarLabel->set_horizontal_alignment(godot::HORIZONTAL_ALIGNMENT_LEFT);
+    TitleBarLabel->set_vertical_alignment(godot::VERTICAL_ALIGNMENT_CENTER);
+    TitleBarLabel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    TitleBarLabel->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    TitleBarLabel->set_mouse_filter(godot::Control::MOUSE_FILTER_STOP);
+    ApplyTitleBarLabelVisualStyle(TitleBarLabel);
+    return TitleBarLabel;
 }
 
 [[nodiscard]] godot::Button* CreateActionButton(const godot::String& Text)
@@ -251,6 +232,7 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     set_wrap_controls(true);
     set_min_size(godot::Vector2i(860, 560));
 
+
     godot::PanelContainer* DialogPanel{ memnew(godot::PanelContainer) };
     DialogPanel->set_name("DialogPanel");
     DialogPanel->set_anchor(godot::SIDE_LEFT, 0.0F);
@@ -299,9 +281,9 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     TitleBarMargin->add_theme_constant_override("margin_right", 10);
     TitleBarContainer->add_child(TitleBarMargin);
 
-    godot::Button* TitleBarButton{ CreateTitleBarButton("Choose CSP Work") };
-    TitleBarButton->connect("gui_input", callable_mp(this, &CspDiscordRpcGdCppWorksWindow::OnTitleBarGuiInput));
-    TitleBarMargin->add_child(TitleBarButton);
+    godot::Label* TitleBarLabel{ CreateTitleBarLabel("Choose CSP Work") };
+    TitleBarLabel->connect("gui_input", callable_mp(this, &CspDiscordRpcGdCppWorksWindow::OnTitleBarGuiInput));
+    TitleBarMargin->add_child(TitleBarLabel);
 
     godot::MarginContainer* DialogMargin{ memnew(godot::MarginContainer) };
     DialogMargin->set_name("DialogMargin");

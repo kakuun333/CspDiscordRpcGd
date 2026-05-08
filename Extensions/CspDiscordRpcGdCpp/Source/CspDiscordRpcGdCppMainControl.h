@@ -12,6 +12,7 @@
 namespace godot
 {
 
+class ColorRect;
 class CheckButton;
 class GridContainer;
 class InputEvent;
@@ -74,6 +75,7 @@ private:
     void EnsureCloseStatusIndicator();
     void ExecuteCloseAction(ECloseAction CloseAction);
     void SetWindowControlButtonHighlight(godot::Button* WindowControlButton, const godot::Color& HighlightColor) const;
+    void SetModalBackgroundVisible(bool bVisible);
     void UpdateStatusText(const godot::String& StatusText) const;
     void SyncToViewportSize();
     void CaptureRestoreWindowState();
@@ -97,7 +99,7 @@ private:
                          float OffsetTop,
                          float OffsetRight,
                          float OffsetBottom);
-    godot::Button* CreateTitleBarButton(const godot::String& Text, const godot::String& TooltipText) const;
+    godot::Label* CreateTitleBarLabel(const godot::String& Text, const godot::String& TooltipText) const;
     godot::Button* CreateWindowControlButton(const godot::Ref<godot::Texture2D>& Icon, const godot::String& TooltipText) const;
     godot::TextureRect* CreateHeaderWarningIcon(const godot::String& TooltipText) const;
     void UpdateNavigationContentVisibility() const;
@@ -111,6 +113,7 @@ private:
     void OnChooseCspWorkPressed();
     void OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath);
     void OnCloseWindowConfirmed(int32_t CloseAction, bool bDontShowAgain);
+    void OnCloseWindowCancelled();
     void OnCloseWindowTreeExited();
     void OnCloseStatusIndicatorPressed(int32_t MouseButton, const godot::Vector2i& MousePosition);
     void OnCloseStatusIndicatorMenuIdPressed(int32_t Id);
@@ -125,6 +128,7 @@ private:
     godot::Button* MinimizeButton{ nullptr };
     godot::Button* MaximizeButton{ nullptr };
     godot::Button* CloseButton{ nullptr };
+    godot::ColorRect* ModalBackground{ nullptr };
     godot::ScrollContainer* ContentScrollContainer{ nullptr };
     godot::VBoxContainer* HomeContentContainer{ nullptr };
     godot::VBoxContainer* SettingsContentContainer{ nullptr };

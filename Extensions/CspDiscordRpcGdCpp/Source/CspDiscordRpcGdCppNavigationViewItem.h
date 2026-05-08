@@ -3,6 +3,7 @@
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/style_box_flat.hpp"
 #include "godot_cpp/classes/texture2d.hpp"
+#include "godot_cpp/variant/color.hpp"
 
 namespace CspDiscordRpcGdCpp
 {

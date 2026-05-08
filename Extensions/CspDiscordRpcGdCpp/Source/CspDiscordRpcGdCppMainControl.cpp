@@ -8,6 +8,7 @@
 #include "CspDiscordRpcService.h"
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/check_button.hpp"
+#include "godot_cpp/classes/color_rect.hpp"
 #include "godot_cpp/classes/display_server.hpp"
 #include "godot_cpp/classes/grid_container.hpp"
 #include "godot_cpp/classes/h_box_container.hpp"
@@ -196,22 +197,15 @@ void ApplyCheckButtonVisualStyle(godot::CheckButton* CheckButtonNode)
     CheckButtonNode->add_theme_color_override("font_focus_color", godot::Color::hex(0xffffffff));
 }
 
-void ApplyTitleBarButtonVisualStyle(godot::Button* ButtonNode)
+void ApplyTitleBarLabelVisualStyle(godot::Label* LabelNode)
 {
-    if (ButtonNode == nullptr)
+    if (LabelNode == nullptr)
     {
         return;
     }
 
-    ButtonNode->add_theme_font_size_override("font_size", 15);
-    ButtonNode->add_theme_color_override("font_color", godot::Color::hex(0xe0e0e0ff));
-    ButtonNode->add_theme_color_override("font_hover_color", godot::Color::hex(0xffffffff));
-    ButtonNode->add_theme_color_override("font_pressed_color", godot::Color::hex(0xffffffff));
-    ButtonNode->add_theme_color_override("font_focus_color", godot::Color::hex(0xe0e0e0ff));
-    ButtonNode->add_theme_stylebox_override("normal", CreatePanelStyle(godot::Color::hex(0x00000000)));
-    ButtonNode->add_theme_stylebox_override("hover", CreatePanelStyle(godot::Color::hex(0x00000000)));
-    ButtonNode->add_theme_stylebox_override("pressed", CreatePanelStyle(godot::Color::hex(0x00000000)));
-    ButtonNode->add_theme_stylebox_override("focus", CreatePanelStyle(godot::Color::hex(0x00000000)));
+    LabelNode->add_theme_font_size_override("font_size", 15);
+    LabelNode->add_theme_color_override("font_color", godot::Color::hex(0xe0e0e0ff));
 }
 
 void ApplyLabelVisualStyle(godot::Label* LabelNode, const godot::Color& Color)
@@ -738,10 +732,9 @@ void CspDiscordRpcGdCppMainControl::_ready()
     TitleBarIconMargin->add_child(TitleBarIcon);
     TitleBarContainer->add_child(TitleBarIconMargin);
 
-    godot::Button* TitleBarButton = CreateTitleBarButton("CspDiscordRpcGd", "");
-    ApplyTitleBarButtonVisualStyle(TitleBarButton);
-    TitleBarButton->connect("gui_input", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput));
-    TitleBarContainer->add_child(TitleBarButton);
+    godot::Label* TitleBarLabel = CreateTitleBarLabel("CspDiscordRpcGd", "");
+    TitleBarLabel->connect("gui_input", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnTitleBarGuiInput));
+    TitleBarContainer->add_child(TitleBarLabel);
 
     MinimizeButton = CreateWindowControlButton(CreateTextureFromSvg(EmbeddedSvgResources::Minimize), "Minimize");
     SetWindowControlButtonHighlight(MinimizeButton, godot::Color(0.0f, 0.0f, 0.0f, 0.0f));
@@ -882,7 +875,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     SettingsContentContainer->add_child(SettingsGridContainer);
 
     ClipStudioCommonRootPathLineEdit = CreateNamedControl<godot::LineEdit>("ClipStudioCommonRootPath");
-    ClipStudioCommonRootPathLineEdit->set_placeholder(godot::String::utf8(R"(D:\Documents\CELSYS\CLIPStudioCommon)"));
+    ClipStudioCommonRootPathLineEdit->set_placeholder("D:/Documents/CELSYS/CLIPStudioCommon");
     ApplyLineEditVisualStyle(ClipStudioCommonRootPathLineEdit);
     ClipStudioCommonRootPathLineEdit->set_tooltip_text("Optional. Set this if you moved the CLIPStudioCommon folder away from the default CELSYS locations.");
     ClipStudioCommonRootPathLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
@@ -1027,6 +1020,14 @@ void CspDiscordRpcGdCppMainControl::_ready()
                     -ResizeCornerExtent,
                     0.0F,
                     0.0F);
+
+    ModalBackground = memnew(godot::ColorRect);
+    ModalBackground->set_name("ModalBackground");
+    ModalBackground->set_anchors_and_offsets_preset(godot::Control::PRESET_FULL_RECT);
+    ModalBackground->set_color(godot::Color(0.0F, 0.0F, 0.0F, 0.52F));
+    ModalBackground->set_mouse_filter(godot::Control::MOUSE_FILTER_STOP);
+    ModalBackground->set_visible(false);
+    add_child(ModalBackground);
 
     UpdateMaximizeButtonIcon();
     LoadPropertySettings();
@@ -1427,7 +1428,17 @@ void CspDiscordRpcGdCppMainControl::UpdateMaximizeButtonIcon()
 
 void CspDiscordRpcGdCppMainControl::AddPropertyRow(godot::GridContainer* GridContainer, const godot::String& LabelText, godot::Control* EditorControl)
 {
-    GridContainer->add_child(CreatePropertyLabel(LabelText));
+    godot::Label* PropertyLabel{ CreatePropertyLabel(LabelText) };
+    PropertyLabel->set_custom_minimum_size(godot::Vector2(0.0F, 0.0F));
+    PropertyLabel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    GridContainer->add_child(PropertyLabel);
+
+    if (EditorControl != nullptr)
+    {
+        EditorControl->set_custom_minimum_size(godot::Vector2(0.0F, EditorControl->get_custom_minimum_size().y));
+        EditorControl->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    }
+
     GridContainer->add_child(EditorControl);
 }
 
@@ -1484,7 +1495,7 @@ godot::GridContainer* CspDiscordRpcGdCppMainControl::CreateCollapsiblePropertyGr
     godot::MarginContainer* ContentMarginContainer = memnew(godot::MarginContainer);
     ContentMarginContainer->set_name(godot::String(Name) + godot::String("ContentMargin"));
     ContentMarginContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    ContentMarginContainer->add_theme_constant_override("margin_left", 42);
+    ContentMarginContainer->add_theme_constant_override("margin_left", 28);
     ContentMarginContainer->set_visible(bExpandedByDefault);
     GroupContainer->add_child(ContentMarginContainer);
 
@@ -1572,19 +1583,20 @@ void CspDiscordRpcGdCppMainControl::AddResizeHandle(const godot::String& Name,
     add_child(ResizeHandle);
 }
 
-godot::Button* CspDiscordRpcGdCppMainControl::CreateTitleBarButton(const godot::String& Text, const godot::String& TooltipText) const
+godot::Label* CspDiscordRpcGdCppMainControl::CreateTitleBarLabel(const godot::String& Text, const godot::String& TooltipText) const
 {
-    godot::Button* TitleBarButton = memnew(godot::Button);
-    TitleBarButton->set_name("TitleBarButton");
-    TitleBarButton->set_text(Text);
-    TitleBarButton->set_flat(true);
-    TitleBarButton->set_focus_mode(godot::Control::FOCUS_NONE);
-    TitleBarButton->set_clip_text(true);
-    TitleBarButton->set_text_alignment(godot::HORIZONTAL_ALIGNMENT_LEFT);
-    TitleBarButton->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    TitleBarButton->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    TitleBarButton->set_tooltip_text(TooltipText);
-    return TitleBarButton;
+    godot::Label* TitleBarLabel = memnew(godot::Label);
+    TitleBarLabel->set_name("TitleBarLabel");
+    TitleBarLabel->set_text(Text);
+    TitleBarLabel->set_clip_text(true);
+    TitleBarLabel->set_horizontal_alignment(godot::HORIZONTAL_ALIGNMENT_LEFT);
+    TitleBarLabel->set_vertical_alignment(godot::VERTICAL_ALIGNMENT_CENTER);
+    TitleBarLabel->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    TitleBarLabel->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    TitleBarLabel->set_mouse_filter(godot::Control::MOUSE_FILTER_STOP);
+    TitleBarLabel->set_tooltip_text(TooltipText);
+    ApplyTitleBarLabelVisualStyle(TitleBarLabel);
+    return TitleBarLabel;
 }
 
 godot::Button* CspDiscordRpcGdCppMainControl::CreateWindowControlButton(const godot::Ref<godot::Texture2D>& Icon, const godot::String& TooltipText) const
@@ -1669,6 +1681,25 @@ void CspDiscordRpcGdCppMainControl::OnMaximizePressed()
     UpdateMaximizeButtonIcon();
 }
 
+void CspDiscordRpcGdCppMainControl::SetModalBackgroundVisible(const bool bVisible)
+{
+    if (ModalBackground == nullptr)
+    {
+        return;
+    }
+
+    ModalBackground->set_visible(bVisible);
+
+    if (bVisible && ModalBackground->get_parent() == this)
+    {
+        const int32_t LastChildIndex{ get_child_count() - 1 };
+        if (LastChildIndex >= 0)
+        {
+            move_child(ModalBackground, LastChildIndex);
+        }
+    }
+}
+
 void CspDiscordRpcGdCppMainControl::OnClosePressed()
 {
     if (bDontShowCloseWindowAgain)
@@ -1681,6 +1712,7 @@ void CspDiscordRpcGdCppMainControl::OnClosePressed()
     {
         CloseWindow = memnew(CspDiscordRpcGdCppCloseWindow);
         CloseWindow->connect("confirmed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseWindowConfirmed));
+        CloseWindow->connect("cancelled", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseWindowCancelled));
         CloseWindow->connect("tree_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseWindowTreeExited));
 
         if (godot::Window* OwnerWindow = get_window())
@@ -1696,6 +1728,7 @@ void CspDiscordRpcGdCppMainControl::OnClosePressed()
     CloseWindow->SetSelectedCloseAction(static_cast<CspDiscordRpcGdCppCloseWindow::ECloseAction>(CloseAction));
     CloseWindow->SetDontShowAgain(bDontShowCloseWindowAgain);
     CloseWindow->set_exclusive(false);
+    SetModalBackgroundVisible(true);
     CloseWindow->popup_centered(godot::Vector2i(396, 172));
     CloseWindow->set_size(godot::Vector2i(396, 172));
 }
@@ -1731,6 +1764,7 @@ void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
 
     WorksWindow->SetWorks(Works);
     WorksWindow->set_exclusive(false);
+    SetModalBackgroundVisible(true);
     WorksWindow->popup_centered(godot::Vector2i(960, 640));
 }
 
@@ -1743,6 +1777,7 @@ void CspDiscordRpcGdCppMainControl::OnCspWorkChosen(const godot::String& WorkNam
 void CspDiscordRpcGdCppMainControl::OnWorksWindowTreeExited()
 {
     WorksWindow = nullptr;
+    SetModalBackgroundVisible(CloseWindow != nullptr && CloseWindow->is_visible());
 }
 
 void CspDiscordRpcGdCppMainControl::OnCloseWindowConfirmed(int32_t InCloseAction, bool bDontShowAgain)
@@ -1760,12 +1795,19 @@ void CspDiscordRpcGdCppMainControl::OnCloseWindowConfirmed(int32_t InCloseAction
 
     bDontShowCloseWindowAgain = bDontShowAgain;
     SavePropertySettings();
+    SetModalBackgroundVisible(false);
     ExecuteCloseAction(CloseAction);
+}
+
+void CspDiscordRpcGdCppMainControl::OnCloseWindowCancelled()
+{
+    SetModalBackgroundVisible(WorksWindow != nullptr && WorksWindow->is_visible());
 }
 
 void CspDiscordRpcGdCppMainControl::OnCloseWindowTreeExited()
 {
     CloseWindow = nullptr;
+    SetModalBackgroundVisible(WorksWindow != nullptr && WorksWindow->is_visible());
 }
 
 void CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorPressed(int32_t MouseButton, const godot::Vector2i& MousePosition)
