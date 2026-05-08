@@ -5,6 +5,7 @@
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/control.hpp"
 #include "godot_cpp/classes/display_server.hpp"
+#include "godot_cpp/classes/input_event.hpp"
 #include "godot_cpp/variant/vector2i.hpp"
 #include <cstdint>
 #include <vector>
@@ -15,7 +16,6 @@ namespace godot
 class ColorRect;
 class CheckButton;
 class GridContainer;
-class InputEvent;
 class Label;
 class LineEdit;
 class OptionButton;
@@ -57,6 +57,7 @@ public:
     CspDiscordRpcGdCppMainControl() = default;
 
     virtual void _ready() override;
+    virtual void _input(const godot::Ref<godot::InputEvent>& Event) override;
     virtual void _exit_tree() override;
     void SetRichPresenceTextLanguage(int32_t NewRichPresenceTextLanguage);
     [[nodiscard]] int32_t GetRichPresenceTextLanguage() const;

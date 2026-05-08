@@ -20,9 +20,6 @@ class CspDiscordRpcGdCppWorkItem final : public godot::VBoxContainer
 {
     GDCLASS(CspDiscordRpcGdCppWorkItem, godot::VBoxContainer)
 
-protected:
-    static void _bind_methods();
-
 public:
     CspDiscordRpcGdCppWorkItem() = default;
 
@@ -34,9 +31,14 @@ public:
     [[nodiscard]] const godot::String& GetWorkName() const;
     [[nodiscard]] const godot::String& GetWorkPath() const;
 
+protected:
+    static void _bind_methods();
+
 private:
     void EnsureUIBuilt();
     void RefreshUI();
+    void OnMouseEntered();
+    void OnMouseExited();
     void OnGuiInput(const godot::Ref<godot::InputEvent>& Event);
 
 private:
@@ -45,6 +47,7 @@ private:
     godot::TextureRect* ThumbnailTextureRect{ nullptr };
     godot::Label* WorkNameLabel{ nullptr };
     bool bSelected{ false };
+    bool bHovered{ false };
 };
 
 } // namespace CspDiscordRpcGdCpp

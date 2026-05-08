@@ -14,13 +14,20 @@
 namespace
 {
 
-[[nodiscard]] godot::Ref<godot::StyleBoxFlat> CreateWorkItemStyle(bool bSelected)
+[[nodiscard]] godot::Ref<godot::StyleBoxFlat> CreateWorkItemStyle(const bool bSelected, const bool bHovered)
 {
+    const godot::Color NormalColor{ godot::Color::hex(0x2e3345ff) };
+    const godot::Color HoverColor{ godot::Color::hex(0x38435aff) };
+    const godot::Color SelectedColor{ godot::Color::hex(0x47577dff) };
+    const godot::Color NormalBorderColor{ godot::Color::hex(0x3d4558ff) };
+    const godot::Color HoverBorderColor{ godot::Color::hex(0x6dabe4ff) };
+    const godot::Color SelectedBorderColor{ godot::Color::hex(0x9fcef7ff) };
+
     godot::Ref<godot::StyleBoxFlat> StyleBox;
     StyleBox.instantiate();
-    StyleBox->set_bg_color(bSelected ? godot::Color(0.28f, 0.34f, 0.49f, 1.0f) : godot::Color(0.18f, 0.20f, 0.27f, 1.0f));
+    StyleBox->set_bg_color(bSelected ? SelectedColor : (bHovered ? HoverColor : NormalColor));
     StyleBox->set_border_width_all(1);
-    StyleBox->set_border_color(bSelected ? godot::Color(0.62f, 0.74f, 1.0f, 1.0f) : godot::Color(0.24f, 0.27f, 0.34f, 1.0f));
+    StyleBox->set_border_color(bSelected ? SelectedBorderColor : (bHovered ? HoverBorderColor : NormalBorderColor));
     StyleBox->set_corner_radius_all(10);
     StyleBox->set_content_margin_all(10);
     return StyleBox;
@@ -53,6 +60,8 @@ void CspDiscordRpcGdCppWorkItem::_bind_methods()
 {
     godot::ClassDB::bind_method(godot::D_METHOD("set_selected", "selected"), &CspDiscordRpcGdCppWorkItem::SetSelected);
     godot::ClassDB::bind_method(godot::D_METHOD("on_gui_input", "event"), &CspDiscordRpcGdCppWorkItem::OnGuiInput);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_mouse_entered"), &CspDiscordRpcGdCppWorkItem::OnMouseEntered);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_mouse_exited"), &CspDiscordRpcGdCppWorkItem::OnMouseExited);
 
     ADD_SIGNAL(godot::MethodInfo("pressed",
                                  godot::PropertyInfo(godot::Variant::STRING, "work_name"),
@@ -98,6 +107,7 @@ void CspDiscordRpcGdCppWorkItem::EnsureUIBuilt()
     set_custom_minimum_size(godot::Vector2(180.0f, 220.0f));
     set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     set_mouse_filter(godot::Control::MOUSE_FILTER_STOP);
+    set_default_cursor_shape(godot::Control::CURSOR_POINTING_HAND);
     add_theme_constant_override("separation", 10);
 
     ThumbnailPanel = memnew(godot::PanelContainer);
@@ -125,6 +135,8 @@ void CspDiscordRpcGdCppWorkItem::EnsureUIBuilt()
     add_child(WorkNameLabel);
 
     connect("gui_input", callable_mp(this, &CspDiscordRpcGdCppWorkItem::OnGuiInput));
+    connect("mouse_entered", callable_mp(this, &CspDiscordRpcGdCppWorkItem::OnMouseEntered));
+    connect("mouse_exited", callable_mp(this, &CspDiscordRpcGdCppWorkItem::OnMouseExited));
 }
 
 void CspDiscordRpcGdCppWorkItem::RefreshUI()
@@ -134,10 +146,22 @@ void CspDiscordRpcGdCppWorkItem::RefreshUI()
         return;
     }
 
-    ThumbnailPanel->add_theme_stylebox_override("panel", CreateWorkItemStyle(bSelected));
+    ThumbnailPanel->add_theme_stylebox_override("panel", CreateWorkItemStyle(bSelected, bHovered));
     ThumbnailTextureRect->set_texture(LoadTextureFromPath(WorkData.ThumbnailPath));
     WorkNameLabel->set_text(WorkData.Name.is_empty() ? godot::String("Untitled Work") : WorkData.Name);
-    WorkNameLabel->set_modulate(bSelected ? godot::Color(1.0f, 1.0f, 1.0f, 1.0f) : godot::Color(0.92f, 0.94f, 0.98f, 1.0f));
+    WorkNameLabel->set_modulate((bSelected || bHovered) ? godot::Color::hex(0xffffffff) : godot::Color::hex(0xe0e0e0ff));
+}
+
+void CspDiscordRpcGdCppWorkItem::OnMouseEntered()
+{
+    bHovered = true;
+    RefreshUI();
+}
+
+void CspDiscordRpcGdCppWorkItem::OnMouseExited()
+{
+    bHovered = false;
+    RefreshUI();
 }
 
 void CspDiscordRpcGdCppWorkItem::OnGuiInput(const godot::Ref<godot::InputEvent>& Event)

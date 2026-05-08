@@ -93,6 +93,58 @@ enum class EWindowControlButtonStyle : int32_t
     return godot::ImageTexture::create_from_image(Image);
 }
 
+[[nodiscard]] bool IsLineEditUnderMouse(godot::Control* ControlNode, const godot::Vector2& MousePosition)
+{
+    if (ControlNode == nullptr || !ControlNode->is_visible_in_tree())
+    {
+        return false;
+    }
+
+    if (godot::Object::cast_to<godot::LineEdit>(ControlNode) != nullptr && ControlNode->get_global_rect().has_point(MousePosition))
+    {
+        return true;
+    }
+
+    for (int32_t ChildIndex{}; ChildIndex < ControlNode->get_child_count(); ++ChildIndex)
+    {
+        godot::Control* ChildControl{ godot::Object::cast_to<godot::Control>(ControlNode->get_child(ChildIndex)) };
+        if (ChildControl != nullptr && IsLineEditUnderMouse(ChildControl, MousePosition))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ReleaseFocusedLineEditOnOutsideMouseClick(godot::Control* RootControl, const godot::Ref<godot::InputEvent>& Event)
+{
+    const godot::Ref<godot::InputEventMouseButton> MouseButton{ Event };
+    if (!MouseButton.is_valid() || !MouseButton->is_pressed() || MouseButton->get_button_index() != godot::MOUSE_BUTTON_LEFT)
+    {
+        return;
+    }
+
+    if (RootControl == nullptr)
+    {
+        return;
+    }
+
+    godot::Viewport* Viewport{ RootControl->get_viewport() };
+    if (Viewport == nullptr)
+    {
+        return;
+    }
+
+    godot::LineEdit* FocusedLineEdit{ godot::Object::cast_to<godot::LineEdit>(Viewport->gui_get_focus_owner()) };
+    if (FocusedLineEdit == nullptr || IsLineEditUnderMouse(RootControl, MouseButton->get_position()))
+    {
+        return;
+    }
+
+    FocusedLineEdit->release_focus();
+}
+
 void ApplyLabelVisualStyle(godot::Label* LabelNode, const godot::Color& Color = godot::Color::hex(0xe0e0e0ff));
 
 godot::Label* CreatePropertyLabel(const godot::String& Text)
@@ -1031,6 +1083,11 @@ void CspDiscordRpcGdCppMainControl::_ready()
 
     UpdateMaximizeButtonIcon();
     LoadPropertySettings();
+}
+
+void CspDiscordRpcGdCppMainControl::_input(const godot::Ref<godot::InputEvent>& Event)
+{
+    ReleaseFocusedLineEditOnOutsideMouseClick(this, Event);
 }
 
 void CspDiscordRpcGdCppMainControl::_exit_tree()

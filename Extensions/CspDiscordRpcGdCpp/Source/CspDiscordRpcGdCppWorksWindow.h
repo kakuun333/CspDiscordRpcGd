@@ -29,6 +29,7 @@ public:
     CspDiscordRpcGdCppWorksWindow() = default;
 
     virtual void _ready() override;
+    virtual void _input(const godot::Ref<godot::InputEvent>& Event) override;
 
     void SetWorks(const std::vector<CspDiscordRpcGdCppWorkData>& InWorks);
 

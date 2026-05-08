@@ -14,6 +14,7 @@
 #include "godot_cpp/classes/scroll_container.hpp"
 #include "godot_cpp/classes/style_box_flat.hpp"
 #include "godot_cpp/classes/v_box_container.hpp"
+#include "godot_cpp/classes/viewport.hpp"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/core/memory.hpp"
 #include "godot_cpp/core/object.hpp"
@@ -33,6 +34,58 @@ namespace
     Style->set_shadow_size(8);
     Style->set_shadow_offset({ 0.0F, 2.0F });
     return Style;
+}
+
+[[nodiscard]] bool IsLineEditUnderMouse(godot::Control* ControlNode, const godot::Vector2& MousePosition)
+{
+    if (ControlNode == nullptr || !ControlNode->is_visible_in_tree())
+    {
+        return false;
+    }
+
+    if (godot::Object::cast_to<godot::LineEdit>(ControlNode) != nullptr && ControlNode->get_global_rect().has_point(MousePosition))
+    {
+        return true;
+    }
+
+    for (int32_t ChildIndex{}; ChildIndex < ControlNode->get_child_count(); ++ChildIndex)
+    {
+        godot::Control* ChildControl{ godot::Object::cast_to<godot::Control>(ControlNode->get_child(ChildIndex)) };
+        if (ChildControl != nullptr && IsLineEditUnderMouse(ChildControl, MousePosition))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ReleaseFocusedLineEditOnOutsideMouseClick(godot::Control* RootControl, const godot::Ref<godot::InputEvent>& Event)
+{
+    const godot::Ref<godot::InputEventMouseButton> MouseButton{ Event };
+    if (!MouseButton.is_valid() || !MouseButton->is_pressed() || MouseButton->get_button_index() != godot::MOUSE_BUTTON_LEFT)
+    {
+        return;
+    }
+
+    if (RootControl == nullptr)
+    {
+        return;
+    }
+
+    godot::Viewport* Viewport{ RootControl->get_viewport() };
+    if (Viewport == nullptr)
+    {
+        return;
+    }
+
+    godot::LineEdit* FocusedLineEdit{ godot::Object::cast_to<godot::LineEdit>(Viewport->gui_get_focus_owner()) };
+    if (FocusedLineEdit == nullptr || IsLineEditUnderMouse(RootControl, MouseButton->get_position()))
+    {
+        return;
+    }
+
+    FocusedLineEdit->release_focus();
 }
 
 [[nodiscard]] godot::Ref<godot::StyleBoxFlat> CreateTitleBarPanelStyle()
@@ -190,6 +243,11 @@ void CspDiscordRpcGdCppWorksWindow::_ready()
 {
     EnsureUiBuilt();
     RebuildWorkItems();
+}
+
+void CspDiscordRpcGdCppWorksWindow::_input(const godot::Ref<godot::InputEvent>& Event)
+{
+    ReleaseFocusedLineEditOnOutsideMouseClick(RootContainer, Event);
 }
 
 void CspDiscordRpcGdCppWorksWindow::SetWorks(const std::vector<CspDiscordRpcGdCppWorkData>& InWorks)
