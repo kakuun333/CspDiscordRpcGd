@@ -943,7 +943,7 @@ void CspDiscordRpcGdCppMainControl::_ready()
     SettingsContentContainer->add_child(SettingsGridContainer);
 
     ClipStudioCommonRootPathLineEdit = CreateNamedControl<godot::LineEdit>("ClipStudioCommonRootPath");
-    ClipStudioCommonRootPathLineEdit->set_placeholder("D:/Documents/CELSYS/CLIPStudioCommon");
+    ClipStudioCommonRootPathLineEdit->set_placeholder(godot::String::utf8(R"(D:\Documents\CELSYS\CLIPStudioCommon)"));
     ApplyLineEditVisualStyle(ClipStudioCommonRootPathLineEdit);
     ClipStudioCommonRootPathLineEdit->set_tooltip_text("Optional. Set this if you moved the CLIPStudioCommon folder away from the default CELSYS locations.");
     ClipStudioCommonRootPathLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsTextChanged));
