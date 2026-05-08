@@ -34,6 +34,7 @@ public:
 
     virtual void _ready() override;
 
+    static void ConfigureWindow();
     void SetExpanded(bool bNewExpanded);
     [[nodiscard]] bool IsExpanded() const;
     void SetSelectedItem(int32_t NewSelectedItem);
@@ -52,8 +53,8 @@ private:
 
     [[nodiscard]] godot::Ref<godot::Texture2D> CreateTextureFromSvg(const godot::String& SvgContent) const;
     [[nodiscard]] CspDiscordRpcGdCppNavigationViewItem* CreateItem(int32_t ItemId,
-                                                                    const godot::String& Text,
-                                                                    const godot::Ref<godot::Texture2D>& Icon);
+                                                                   const godot::String& Text,
+                                                                   const godot::Ref<godot::Texture2D>& Icon);
 
 private:
     static godot::Ref<godot::StyleBoxFlat> CreatePanelStyle(const godot::Color& Color);

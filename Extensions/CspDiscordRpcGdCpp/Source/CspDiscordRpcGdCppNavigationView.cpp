@@ -3,6 +3,7 @@
 #include "CspDiscordRpcGdCppNavigationViewItem.h"
 #include "Generated/EmbeddedSvgResources.h"
 #include "godot_cpp/classes/button.hpp"
+#include "godot_cpp/classes/engine.hpp"
 #include "godot_cpp/classes/image.hpp"
 #include "godot_cpp/classes/image_texture.hpp"
 #include "godot_cpp/classes/v_box_container.hpp"
@@ -12,7 +13,6 @@
 
 namespace CspDiscordRpcGdCpp
 {
-
 namespace
 {
 
@@ -23,7 +23,27 @@ constexpr float CollapsedWidth{ 56.0f };
 
 void CspDiscordRpcGdCppNavigationView::_ready()
 {
+    ConfigureWindow();
     BuildLayout();
+}
+
+void CspDiscordRpcGdCppNavigationView::ConfigureWindow()
+{
+    godot::Engine* Engine{ godot::Engine::get_singleton() };
+    if (Engine != nullptr && Engine->is_editor_hint())
+    {
+        return;
+    }
+
+    godot::DisplayServer* DisplayServer{ godot::DisplayServer::get_singleton() };
+    if (DisplayServer == nullptr)
+    {
+        return;
+    }
+
+    DisplayServer->window_set_flag(godot::DisplayServer::WINDOW_FLAG_BORDERLESS, true);
+    DisplayServer->window_set_flag(godot::DisplayServer::WINDOW_FLAG_RESIZE_DISABLED, false);
+    DisplayServer->window_set_flag(godot::DisplayServer::WINDOW_FLAG_EXTEND_TO_TITLE, false);
 }
 
 void CspDiscordRpcGdCppNavigationView::SetExpanded(const bool bNewExpanded)
@@ -63,20 +83,26 @@ int32_t CspDiscordRpcGdCppNavigationView::GetSelectedItem() const
     return SelectedItem;
 }
 
-void CspDiscordRpcGdCppNavigationView::SetSelectedItemChangedCallable(const godot::Callable& NewSelectedItemChangedCallable)
+void CspDiscordRpcGdCppNavigationView::SetSelectedItemChangedCallable(
+    const godot::Callable& NewSelectedItemChangedCallable)
 {
     SelectedItemChangedCallable = NewSelectedItemChangedCallable;
 }
 
 void CspDiscordRpcGdCppNavigationView::_bind_methods()
 {
-    godot::ClassDB::bind_method(godot::D_METHOD("set_expanded", "expanded"), &CspDiscordRpcGdCppNavigationView::SetExpanded);
+    godot::ClassDB::bind_method(godot::D_METHOD("set_expanded", "expanded"),
+                                &CspDiscordRpcGdCppNavigationView::SetExpanded);
     godot::ClassDB::bind_method(godot::D_METHOD("is_expanded"), &CspDiscordRpcGdCppNavigationView::IsExpanded);
-    godot::ClassDB::bind_method(godot::D_METHOD("set_selected_item", "selected_item"), &CspDiscordRpcGdCppNavigationView::SetSelectedItem);
-    godot::ClassDB::bind_method(godot::D_METHOD("get_selected_item"), &CspDiscordRpcGdCppNavigationView::GetSelectedItem);
+    godot::ClassDB::bind_method(godot::D_METHOD("set_selected_item", "selected_item"),
+                                &CspDiscordRpcGdCppNavigationView::SetSelectedItem);
+    godot::ClassDB::bind_method(godot::D_METHOD("get_selected_item"),
+                                &CspDiscordRpcGdCppNavigationView::GetSelectedItem);
 
-    ADD_PROPERTY(godot::PropertyInfo(godot::Variant::BOOL, "Expanded", godot::PROPERTY_HINT_NONE, "", godot::PROPERTY_USAGE_DEFAULT), "set_expanded", "is_expanded");
-    ADD_PROPERTY(godot::PropertyInfo(godot::Variant::INT, "Selected Item", godot::PROPERTY_HINT_ENUM, "Home,Settings", godot::PROPERTY_USAGE_DEFAULT), "set_selected_item", "get_selected_item");
+    ADD_PROPERTY(
+        godot::PropertyInfo(godot::Variant::BOOL, "Expanded", godot::PROPERTY_HINT_NONE, "", godot::PROPERTY_USAGE_DEFAULT), "set_expanded", "is_expanded");
+    ADD_PROPERTY(
+        godot::PropertyInfo(godot::Variant::INT, "Selected Item", godot::PROPERTY_HINT_ENUM, "Home,Settings", godot ::PROPERTY_USAGE_DEFAULT), "set_selected_item", "get_selected_item");
 
     BIND_ENUM_CONSTANT(NAVIGATION_VIEW_ITEM_HOME);
     BIND_ENUM_CONSTANT(NAVIGATION_VIEW_ITEM_SETTINGS);
@@ -169,7 +195,8 @@ void CspDiscordRpcGdCppNavigationView::UpdateSelectionState()
     }
 }
 
-godot::Ref<godot::Texture2D> CspDiscordRpcGdCppNavigationView::CreateTextureFromSvg(const godot::String& SvgContent) const
+godot::Ref<godot::Texture2D> CspDiscordRpcGdCppNavigationView::CreateTextureFromSvg(
+    const godot::String& SvgContent) const
 {
     if (SvgContent.is_empty())
     {
@@ -188,8 +215,8 @@ godot::Ref<godot::Texture2D> CspDiscordRpcGdCppNavigationView::CreateTextureFrom
 }
 
 CspDiscordRpcGdCppNavigationViewItem* CspDiscordRpcGdCppNavigationView::CreateItem(const int32_t ItemId,
-                                                                                    const godot::String& Text,
-                                                                                    const godot::Ref<godot::Texture2D>& Icon)
+                                                                                   const godot::String& Text,
+                                                                                   const godot::Ref<godot::Texture2D>& Icon)
 {
     CspDiscordRpcGdCppNavigationViewItem* Item{ memnew(CspDiscordRpcGdCppNavigationViewItem) };
     Item->Setup(ItemId, Text, Icon);

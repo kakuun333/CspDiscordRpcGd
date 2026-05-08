@@ -58,8 +58,6 @@ add_library(${PROJECT_NAME} SHARED
         Source/CspDiscordRpcGdCppWorkItem.h
         Source/CspDiscordRpcGdCppWorksWindow.cpp
         Source/CspDiscordRpcGdCppWorksWindow.h
-        Source/CspDiscordRpcGdCppFunctionLibrary.cpp
-        Source/CspDiscordRpcGdCppFunctionLibrary.h
         ${GENERATED_SVG_HEADER}
 )
 

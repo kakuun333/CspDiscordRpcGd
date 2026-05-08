@@ -1,5 +1,4 @@
 #include "CspDiscordRpcGdCppCloseWindow.h"
-#include "CspDiscordRpcGdCppFunctionLibrary.h"
 #include "CspDiscordRpcGdCppMainControl.h"
 #include "CspDiscordRpcGdCppWorkItem.h"
 #include "CspDiscordRpcGdCppWorksWindow.h"
@@ -20,7 +19,6 @@ void InitializeModule(godot::ModuleInitializationLevel InitLevel)
         GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorksWindow);
         GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppNavigationViewItem);
         GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppNavigationView);
-        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppFunctionLibrary);
     }
 
     // Register editor-level classes.

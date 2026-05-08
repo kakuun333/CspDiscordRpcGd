@@ -2,10 +2,10 @@
 
 #include "CspDiscordRpcGdCppCloseWindow.h"
 #include "CspDiscordRpcGdCppNavigationView.h"
-#include "Generated/EmbeddedSvgResources.h"
 #include "CspDiscordRpcGdCppWorkData.h"
 #include "CspDiscordRpcGdCppWorksWindow.h"
 #include "CspDiscordRpcService.h"
+#include "Generated/EmbeddedSvgResources.h"
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/check_button.hpp"
 #include "godot_cpp/classes/color_rect.hpp"
