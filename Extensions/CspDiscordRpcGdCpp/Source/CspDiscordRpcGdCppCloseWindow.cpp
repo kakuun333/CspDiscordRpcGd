@@ -41,6 +41,10 @@ namespace
     Style->set_bg_color(godot::Color::hex(0x1c1f29ff));
     Style->set_border_color(godot::Color::hex(0x6dabe4ff));
     Style->set_border_width(godot::SIDE_BOTTOM, 1);
+    Style->set_corner_radius(godot::CORNER_TOP_LEFT, 12);
+    Style->set_corner_radius(godot::CORNER_TOP_RIGHT, 12);
+    Style->set_corner_radius(godot::CORNER_BOTTOM_LEFT, 0);
+    Style->set_corner_radius(godot::CORNER_BOTTOM_RIGHT, 0);
     Style->set_content_margin(godot::SIDE_LEFT, 0.0F);
     Style->set_content_margin(godot::SIDE_TOP, 0.0F);
     Style->set_content_margin(godot::SIDE_RIGHT, 0.0F);
