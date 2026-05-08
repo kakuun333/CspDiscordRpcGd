@@ -1,10 +1,12 @@
 #pragma once
 
+#include "CspDiscordRpcGdCppNavigationView.h"
 #include "CspDiscordRpcGdCppWorkData.h"
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/control.hpp"
 #include "godot_cpp/classes/display_server.hpp"
 #include "godot_cpp/variant/vector2i.hpp"
+#include <cstdint>
 #include <vector>
 
 namespace godot
@@ -16,7 +18,9 @@ class InputEvent;
 class Label;
 class LineEdit;
 class OptionButton;
+class PanelContainer;
 class PopupMenu;
+class ScrollContainer;
 class StatusIndicator;
 class Texture2D;
 class TextureRect;
@@ -96,6 +100,8 @@ private:
     godot::Button* CreateTitleBarButton(const godot::String& Text, const godot::String& TooltipText) const;
     godot::Button* CreateWindowControlButton(const godot::Ref<godot::Texture2D>& Icon, const godot::String& TooltipText) const;
     godot::TextureRect* CreateHeaderWarningIcon(const godot::String& TooltipText) const;
+    void UpdateNavigationContentVisibility() const;
+    void OnNavigationViewSelectedItemChanged(int32_t SelectedItem);
 
     void OnTitleBarGuiInput(const godot::Ref<godot::InputEvent>& Event);
     void OnResizeHandleGuiInput(const godot::Ref<godot::InputEvent>& Event, int32_t ResizeEdge);
@@ -119,6 +125,10 @@ private:
     godot::Button* MinimizeButton{ nullptr };
     godot::Button* MaximizeButton{ nullptr };
     godot::Button* CloseButton{ nullptr };
+    godot::ScrollContainer* ContentScrollContainer{ nullptr };
+    godot::VBoxContainer* HomeContentContainer{ nullptr };
+    godot::VBoxContainer* SettingsContentContainer{ nullptr };
+    CspDiscordRpcGdCppNavigationView* NavigationView{ nullptr };
     godot::CheckButton* DiscordRichPresenceCheckButton{ nullptr };
     godot::Button* ChooseCSPWorkButton{ nullptr };
     godot::OptionButton* RichPresenceTextLanguageOptionButton{ nullptr };
@@ -142,6 +152,7 @@ private:
     int64_t PresenceStartTimestamp{ 0 };
     ECloseAction CloseAction{ ECloseAction::MinimizeToSystemTray };
     ERichPresenceTextLanguage RichPresenceTextLanguage{ ERichPresenceTextLanguage::English };
+    int32_t SelectedNavigationItem{ CspDiscordRpcGdCppNavigationView::NAVIGATION_VIEW_ITEM_HOME };
     bool bDontShowCloseWindowAgain{ false };
     bool bIsApplyingPropertySettings{ false };
     bool bHasRestoreWindowState{ false };

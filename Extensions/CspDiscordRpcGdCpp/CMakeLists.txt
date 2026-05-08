@@ -49,6 +49,10 @@ add_library(${PROJECT_NAME} SHARED
         Source/CspDiscordRpcGdCppMainControl.h
         Source/CspDiscordRpcGdCppCloseWindow.cpp
         Source/CspDiscordRpcGdCppCloseWindow.h
+        Source/CspDiscordRpcGdCppNavigationView.cpp
+        Source/CspDiscordRpcGdCppNavigationView.h
+        Source/CspDiscordRpcGdCppNavigationViewItem.cpp
+        Source/CspDiscordRpcGdCppNavigationViewItem.h
         Source/CspDiscordRpcGdCppWorkData.h
         Source/CspDiscordRpcGdCppWorkItem.cpp
         Source/CspDiscordRpcGdCppWorkItem.h

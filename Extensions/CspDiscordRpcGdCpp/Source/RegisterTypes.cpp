@@ -3,7 +3,8 @@
 #include "CspDiscordRpcGdCppMainControl.h"
 #include "CspDiscordRpcGdCppWorkItem.h"
 #include "CspDiscordRpcGdCppWorksWindow.h"
-#include "godot_cpp/classes/editor_plugin_registration.hpp"
+#include "CspDiscordRpcGdCppNavigationViewItem.h"
+#include "CspDiscordRpcGdCppNavigationView.h"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/godot.hpp"
 
@@ -13,11 +14,13 @@ void InitializeModule(godot::ModuleInitializationLevel InitLevel)
     // Register scene-level classes.
     if (InitLevel == godot::MODULE_INITIALIZATION_LEVEL_SCENE)
     {
-        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppMainControl>();
-        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppCloseWindow>();
-        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkItem>();
-        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorksWindow>();
-        godot::ClassDB::register_class<CspDiscordRpcGdCpp::CspDiscordRpcGdCppFunctionLibrary>();
+        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppMainControl);
+        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppCloseWindow);
+        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkItem);
+        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorksWindow);
+        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppNavigationViewItem);
+        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppNavigationView);
+        GDREGISTER_CLASS(CspDiscordRpcGdCpp::CspDiscordRpcGdCppFunctionLibrary);
     }
 
     // Register editor-level classes.
