@@ -80,6 +80,22 @@ enum class EWindowControlButtonStyle : int32_t
     Close,
 };
 
+
+[[nodiscard]] godot::Vector2i RoundVector2ToVector2i(const godot::Vector2& Value)
+{
+    return { static_cast<int32_t>(Value.x + (Value.x >= 0.0F ? 0.5F : -0.5F)),
+             static_cast<int32_t>(Value.y + (Value.y >= 0.0F ? 0.5F : -0.5F)) };
+}
+
+[[nodiscard]] godot::Vector2i GetViewportBoundsSize(godot::Control* ControlNode)
+{
+    if (ControlNode == nullptr)
+    {
+        return {};
+    }
+
+    return RoundVector2ToVector2i(ControlNode->get_viewport_rect().size);
+}
 [[nodiscard]] godot::Ref<godot::Texture2D> CreateTextureFromSvg(const godot::String SvgContent)
 {
     ERR_FAIL_COND_V_MSG(SvgContent.is_empty(), {}, "Missing embedded SVG content.");
@@ -1420,6 +1436,26 @@ void CspDiscordRpcGdCppMainControl::UpdateStatusText(const godot::String& Status
 void CspDiscordRpcGdCppMainControl::SyncToViewportSize()
 {
     set_size(get_viewport_rect().size);
+
+    const godot::Vector2i BoundsSize{ GetViewportBoundsSize(this) };
+    if (CloseWindow != nullptr)
+    {
+        CloseWindow->SetBoundsSize(BoundsSize);
+        if (CloseWindow->is_visible())
+        {
+            CloseWindow->ApplyResponsiveLayout(false);
+        }
+    }
+
+    if (WorksWindow != nullptr)
+    {
+        WorksWindow->SetBoundsSize(BoundsSize);
+        if (WorksWindow->is_visible())
+        {
+            WorksWindow->ApplyBoundsLayout(false);
+        }
+    }
+
     UpdateMaximizeButtonIcon();
 }
 
@@ -1785,9 +1821,11 @@ void CspDiscordRpcGdCppMainControl::OnClosePressed()
     CloseWindow->SetSelectedCloseAction(static_cast<CspDiscordRpcGdCppCloseWindow::ECloseAction>(CloseAction));
     CloseWindow->SetDontShowAgain(bDontShowCloseWindowAgain);
     CloseWindow->set_exclusive(false);
+    CloseWindow->SetBoundsSize(GetViewportBoundsSize(this));
+    CloseWindow->ApplyResponsiveLayout(true);
     SetModalBackgroundVisible(true);
-    CloseWindow->popup_centered(godot::Vector2i(396, 172));
-    CloseWindow->set_size(godot::Vector2i(396, 172));
+    CloseWindow->popup();
+    CloseWindow->ApplyResponsiveLayout(true);
 }
 
 
@@ -1821,8 +1859,11 @@ void CspDiscordRpcGdCppMainControl::OnChooseCspWorkPressed()
 
     WorksWindow->SetWorks(Works);
     WorksWindow->set_exclusive(false);
+    WorksWindow->SetBoundsSize(GetViewportBoundsSize(this));
+    WorksWindow->ApplyBoundsLayout(true);
     SetModalBackgroundVisible(true);
-    WorksWindow->popup_centered(godot::Vector2i(960, 640));
+    WorksWindow->popup();
+    WorksWindow->ApplyBoundsLayout(true);
 }
 
 void CspDiscordRpcGdCppMainControl::OnCspWorkChosen(const godot::String& WorkName, const godot::String& WorkPath)

@@ -7,6 +7,7 @@
 #include "godot_cpp/classes/h_box_container.hpp"
 #include "godot_cpp/classes/input_event.hpp"
 #include "godot_cpp/classes/input_event_mouse_button.hpp"
+#include "godot_cpp/classes/input_event_mouse_motion.hpp"
 #include "godot_cpp/classes/label.hpp"
 #include "godot_cpp/classes/line_edit.hpp"
 #include "godot_cpp/classes/margin_container.hpp"
@@ -15,6 +16,7 @@
 #include "godot_cpp/classes/style_box_flat.hpp"
 #include "godot_cpp/classes/v_box_container.hpp"
 #include "godot_cpp/classes/viewport.hpp"
+#include "godot_cpp/classes/window.hpp"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/core/memory.hpp"
 #include "godot_cpp/core/object.hpp"
@@ -23,6 +25,51 @@
 namespace
 {
 
+
+constexpr int32_t PreferredWorksWindowWidth{ 960 };
+constexpr int32_t PreferredWorksWindowHeight{ 640 };
+constexpr int32_t MinimumWorksWindowWidth{ 420 };
+constexpr int32_t MinimumWorksWindowHeight{ 320 };
+constexpr int32_t WorksWindowViewportPadding{ 32 };
+
+[[nodiscard]] int32_t ClampInt32(const int32_t Value, const int32_t MinValue, const int32_t MaxValue)
+{
+    if (MaxValue < MinValue)
+    {
+        return MinValue;
+    }
+
+    if (Value < MinValue)
+    {
+        return MinValue;
+    }
+
+    if (Value > MaxValue)
+    {
+        return MaxValue;
+    }
+
+    return Value;
+}
+
+
+[[nodiscard]] godot::Vector2 GetMouseScreenPosition()
+{
+    godot::DisplayServer* DisplayServer{ godot::DisplayServer::get_singleton() };
+    if (DisplayServer == nullptr)
+    {
+        return {};
+    }
+
+    const godot::Vector2i MousePosition{ DisplayServer->mouse_get_position() };
+    return { static_cast<float>(MousePosition.x), static_cast<float>(MousePosition.y) };
+}
+
+[[nodiscard]] godot::Vector2i RoundVector2ToVector2i(const godot::Vector2& Value)
+{
+    return { static_cast<int32_t>(Value.x + (Value.x >= 0.0F ? 0.5F : -0.5F)),
+             static_cast<int32_t>(Value.y + (Value.y >= 0.0F ? 0.5F : -0.5F)) };
+}
 [[nodiscard]] godot::Ref<godot::StyleBoxFlat> CreateDialogPanelStyle()
 {
     godot::Ref<godot::StyleBoxFlat> Style;
@@ -252,6 +299,48 @@ void CspDiscordRpcGdCppWorksWindow::_ready()
 void CspDiscordRpcGdCppWorksWindow::_input(const godot::Ref<godot::InputEvent>& Event)
 {
     ReleaseFocusedLineEditOnOutsideMouseClick(RootContainer, Event);
+
+    if (!bDragging)
+    {
+        return;
+    }
+
+    const godot::Ref<godot::InputEventMouseButton> MouseButton{ Event };
+    if (MouseButton.is_valid() && MouseButton->get_button_index() == godot::MOUSE_BUTTON_LEFT && !MouseButton->is_pressed())
+    {
+        bDragging = false;
+        ClampToBounds();
+        return;
+    }
+
+    const godot::Ref<godot::InputEventMouseMotion> MouseMotion{ Event };
+    if (MouseMotion.is_valid())
+    {
+        UpdateBoundedDrag(GetMouseScreenPosition());
+    }
+}
+
+void CspDiscordRpcGdCppWorksWindow::SetBoundsSize(const godot::Vector2i& NewBoundsSize)
+{
+    BoundsSize = NewBoundsSize;
+}
+
+void CspDiscordRpcGdCppWorksWindow::ApplyBoundsLayout(const bool bCenterInBounds)
+{
+    EnsureUiBuilt();
+    set_size(GetBoundedWindowSize());
+
+    if (bCenterInBounds)
+    {
+        set_position(GetCenteredPosition());
+    }
+
+    ClampToBounds();
+}
+
+void CspDiscordRpcGdCppWorksWindow::ClampToBounds()
+{
+    set_position(GetClampedPosition(get_position()));
 }
 
 void CspDiscordRpcGdCppWorksWindow::SetWorks(const std::vector<CspDiscordRpcGdCppWorkData>& InWorks)
@@ -291,8 +380,9 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     set_flag(godot::Window::FLAG_BORDERLESS, true);
     set_flag(godot::Window::FLAG_TRANSPARENT, true);
     set_transient(true);
-    set_wrap_controls(true);
-    set_min_size(godot::Vector2i(860, 560));
+    set_wrap_controls(false);
+    set_size({ PreferredWorksWindowWidth, PreferredWorksWindowHeight });
+    set_min_size({ 1, 1 });
 
 
     godot::PanelContainer* DialogPanel{ memnew(godot::PanelContainer) };
@@ -500,13 +590,82 @@ bool CspDiscordRpcGdCppWorksWindow::MatchesSearchText(const CspDiscordRpcGdCppWo
 
 void CspDiscordRpcGdCppWorksWindow::OnTitleBarGuiInput(const godot::Ref<godot::InputEvent>& Event)
 {
-    const godot::InputEventMouseButton* MouseButtonEvent = godot::Object::cast_to<const godot::InputEventMouseButton>(*Event);
-    if (MouseButtonEvent == nullptr || MouseButtonEvent->get_button_index() != godot::MOUSE_BUTTON_LEFT || !MouseButtonEvent->is_pressed())
+    const godot::Ref<godot::InputEventMouseButton> MouseButton{ Event };
+    if (!MouseButton.is_valid() || MouseButton->get_button_index() != godot::MOUSE_BUTTON_LEFT || !MouseButton->is_pressed())
     {
         return;
     }
 
-    start_drag();
+    StartBoundedDrag(GetMouseScreenPosition());
+}
+
+void CspDiscordRpcGdCppWorksWindow::StartBoundedDrag(const godot::Vector2& GlobalMousePosition)
+{
+    bDragging = true;
+    const godot::Vector2i CurrentPosition{ get_position() };
+    DragMouseOffset = GlobalMousePosition - godot::Vector2(static_cast<float>(CurrentPosition.x), static_cast<float>(CurrentPosition.y));
+}
+
+void CspDiscordRpcGdCppWorksWindow::UpdateBoundedDrag(const godot::Vector2& GlobalMousePosition)
+{
+    if (!bDragging)
+    {
+        return;
+    }
+
+    set_position(GetClampedPosition(RoundVector2ToVector2i(GlobalMousePosition - DragMouseOffset)));
+}
+
+godot::Vector2i CspDiscordRpcGdCppWorksWindow::GetResolvedBoundsSize() const
+{
+    if (BoundsSize.x > 0 && BoundsSize.y > 0)
+    {
+        return BoundsSize;
+    }
+
+    godot::Window* ParentWindow{ godot::Object::cast_to<godot::Window>(get_parent()) };
+    if (ParentWindow != nullptr)
+    {
+        return ParentWindow->get_size();
+    }
+
+    godot::Viewport* Viewport{ get_viewport() };
+    if (Viewport != nullptr)
+    {
+        return RoundVector2ToVector2i(Viewport->get_visible_rect().size);
+    }
+
+    return get_size();
+}
+
+godot::Vector2i CspDiscordRpcGdCppWorksWindow::GetBoundedWindowSize() const
+{
+    const godot::Vector2i ResolvedBoundsSize{ GetResolvedBoundsSize() };
+    const int32_t AvailableWidth{ ResolvedBoundsSize.x - WorksWindowViewportPadding };
+    const int32_t AvailableHeight{ ResolvedBoundsSize.y - WorksWindowViewportPadding };
+    const int32_t Width{ AvailableWidth >= MinimumWorksWindowWidth ?
+                             ClampInt32(AvailableWidth, MinimumWorksWindowWidth, PreferredWorksWindowWidth) :
+                             ClampInt32(AvailableWidth, 1, PreferredWorksWindowWidth) };
+    const int32_t Height{ AvailableHeight >= MinimumWorksWindowHeight ?
+                              ClampInt32(AvailableHeight, MinimumWorksWindowHeight, PreferredWorksWindowHeight) :
+                              ClampInt32(AvailableHeight, 1, PreferredWorksWindowHeight) };
+    return { Width, Height };
+}
+
+godot::Vector2i CspDiscordRpcGdCppWorksWindow::GetCenteredPosition() const
+{
+    const godot::Vector2i ResolvedBoundsSize{ GetResolvedBoundsSize() };
+    const godot::Vector2i WindowSize{ get_size() };
+    return GetClampedPosition({ (ResolvedBoundsSize.x - WindowSize.x) / 2, (ResolvedBoundsSize.y - WindowSize.y) / 2 });
+}
+
+godot::Vector2i CspDiscordRpcGdCppWorksWindow::GetClampedPosition(const godot::Vector2i& CandidatePosition) const
+{
+    const godot::Vector2i ResolvedBoundsSize{ GetResolvedBoundsSize() };
+    const godot::Vector2i WindowSize{ get_size() };
+    const int32_t MaxX{ ResolvedBoundsSize.x > WindowSize.x ? ResolvedBoundsSize.x - WindowSize.x : 0 };
+    const int32_t MaxY{ ResolvedBoundsSize.y > WindowSize.y ? ResolvedBoundsSize.y - WindowSize.y : 0 };
+    return { ClampInt32(CandidatePosition.x, 0, MaxX), ClampInt32(CandidatePosition.y, 0, MaxY) };
 }
 
 void CspDiscordRpcGdCppWorksWindow::OnSearchTextChanged(const godot::String& NewText)
