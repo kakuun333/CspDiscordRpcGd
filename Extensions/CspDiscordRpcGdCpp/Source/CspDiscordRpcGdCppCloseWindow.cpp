@@ -131,11 +131,43 @@ void ApplyButtonVisualStyle(godot::Button* ButtonNode, const bool bPrimary = fal
     ButtonNode->add_theme_stylebox_override("normal", CreateButtonStyle(NormalColor, BorderColor));
     ButtonNode->add_theme_stylebox_override("hover", CreateButtonStyle(HoverColor, godot::Color::hex(0x9fcef7ff)));
     ButtonNode->add_theme_stylebox_override("pressed", CreateButtonStyle(PressedColor, godot::Color::hex(0x9fcef7ff)));
+    ButtonNode->add_theme_stylebox_override("hover_pressed", CreateButtonStyle(PressedColor, godot::Color::hex(0x9fcef7ff)));
     ButtonNode->add_theme_stylebox_override("focus", CreateButtonStyle(NormalColor, BorderColor));
     ButtonNode->add_theme_color_override("font_color", godot::Color::hex(0xe0e0e0ff));
     ButtonNode->add_theme_color_override("font_hover_color", godot::Color::hex(0xffffffff));
     ButtonNode->add_theme_color_override("font_pressed_color", godot::Color::hex(0xffffffff));
+    ButtonNode->add_theme_color_override("font_hover_pressed_color", godot::Color::hex(0xffffffff));
     ButtonNode->add_theme_color_override("font_focus_color", godot::Color::hex(0xe0e0e0ff));
+}
+
+void ApplyCheckBoxVisualStyle(godot::CheckBox* CheckBoxNode)
+{
+    if (CheckBoxNode == nullptr)
+    {
+        return;
+    }
+
+    const godot::Color NormalColor{ godot::Color::hex(0x242a36ff) };
+    const godot::Color HoverColor{ godot::Color::hex(0x30394aff) };
+    const godot::Color PressedColor{ godot::Color::hex(0x33445cff) };
+    const godot::Color HoverPressedColor{ godot::Color::hex(0x405a78ff) };
+    const godot::Color DisabledColor{ godot::Color::hex(0x202631ff) };
+    const godot::Color NormalBorderColor{ godot::Color::hex(0x526982ff) };
+    const godot::Color AccentBorderColor{ godot::Color::hex(0x9fcef7ff) };
+
+    CheckBoxNode->set_focus_mode(godot::Control::FOCUS_NONE);
+    CheckBoxNode->add_theme_stylebox_override("normal", CreateButtonStyle(NormalColor, NormalBorderColor));
+    CheckBoxNode->add_theme_stylebox_override("hover", CreateButtonStyle(HoverColor, AccentBorderColor));
+    CheckBoxNode->add_theme_stylebox_override("pressed", CreateButtonStyle(PressedColor, AccentBorderColor));
+    CheckBoxNode->add_theme_stylebox_override("hover_pressed", CreateButtonStyle(HoverPressedColor, AccentBorderColor));
+    CheckBoxNode->add_theme_stylebox_override("focus", CreateButtonStyle(PressedColor, AccentBorderColor));
+    CheckBoxNode->add_theme_stylebox_override("disabled", CreateButtonStyle(DisabledColor, NormalBorderColor));
+    CheckBoxNode->add_theme_color_override("font_color", godot::Color::hex(0xe0e0e0ff));
+    CheckBoxNode->add_theme_color_override("font_hover_color", godot::Color::hex(0xffffffff));
+    CheckBoxNode->add_theme_color_override("font_pressed_color", godot::Color::hex(0xffffffff));
+    CheckBoxNode->add_theme_color_override("font_hover_pressed_color", godot::Color::hex(0xffffffff));
+    CheckBoxNode->add_theme_color_override("font_focus_color", godot::Color::hex(0xffffffff));
+    CheckBoxNode->add_theme_color_override("font_disabled_color", godot::Color::hex(0x7a8293ff));
 }
 
 void ApplyLabelVisualStyle(godot::Label* LabelNode, const godot::Color& Color = godot::Color::hex(0xf0f4fbff))
@@ -366,7 +398,7 @@ void CspDiscordRpcGdCppCloseWindow::EnsureUiBuilt()
     DontShowAgainCheckBox->set_name("DontShowAgainCheckBox");
     DontShowAgainCheckBox->set_text("Don't show again");
     DontShowAgainCheckBox->set_custom_minimum_size({ 0.0F, 24.0F });
-    ApplyButtonVisualStyle(DontShowAgainCheckBox);
+    ApplyCheckBoxVisualStyle(DontShowAgainCheckBox);
     BodyContainer->add_child(DontShowAgainCheckBox);
 
     godot::HBoxContainer* FooterContainer{ memnew(godot::HBoxContainer) };
