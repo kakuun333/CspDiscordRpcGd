@@ -1,22 +1,69 @@
 param(
-    [int]$Jobs = $(if ($env:NUMBER_OF_PROCESSORS) { [int]$env:NUMBER_OF_PROCESSORS } else { 1 }),
+    [ValidateSet("windows", "macos", "linux")]
+    [string]$Platform,
+
+    [int]$Jobs = [Environment]::ProcessorCount,
+
     [switch]$SkipClean,
+
     [switch]$DebugSymbolsForRelease
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Select-GodotCppPlatform {
+    Write-Host ""
+    Write-Host "Select platform to build godot-cpp:"
+    Write-Host ""
+    Write-Host "  1) windows"
+    Write-Host "  2) macos"
+    Write-Host "  3) linux"
+    Write-Host ""
+
+    while ($true) {
+        $Selection = Read-Host "Enter choice [1-3]"
+
+        switch ($Selection.Trim()) {
+            "1" { return "windows" }
+            "windows" { return "windows" }
+            "win" { return "windows" }
+
+            "2" { return "macos" }
+            "macos" { return "macos" }
+            "mac" { return "macos" }
+
+            "3" { return "linux" }
+            "linux" { return "linux" }
+
+            default {
+                Write-Host "Invalid choice. Please enter 1, 2, 3, windows, macos, or linux."
+            }
+        }
+    }
+}
+
 function Invoke-GodotCppBuild {
     param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("windows", "macos", "linux")]
+        [string]$Platform,
+
+        [Parameter(Mandatory = $true)]
         [string]$Target,
+
+        [Parameter(Mandatory = $true)]
         [bool]$DevBuild,
+
+        [Parameter(Mandatory = $true)]
         [bool]$DebugSymbols,
+
+        [Parameter(Mandatory = $true)]
         [int]$Jobs
     )
 
-    $args = @(
-        "platform=windows",
+    $SconsArgs = @(
+        "platform=$Platform",
         "target=$Target",
         "dev_build=$(if ($DevBuild) { 'yes' } else { 'no' })",
         "use_static_cpp=yes",
@@ -24,15 +71,21 @@ function Invoke-GodotCppBuild {
         "-j$Jobs"
     )
 
-    Write-Host "Starting godot-cpp build: $Target"
-    & scons @args
+    Write-Host ""
+    Write-Host "Starting godot-cpp build: platform=$Platform, target=$Target"
+    & scons @SconsArgs
+
     if ($LASTEXITCODE -ne 0) {
-        throw "SCons build failed for target '$Target' with exit code $LASTEXITCODE."
+        throw "SCons build failed for platform '$Platform', target '$Target' with exit code $LASTEXITCODE."
     }
 }
 
+if ([string]::IsNullOrWhiteSpace($Platform)) {
+    $Platform = Select-GodotCppPlatform
+}
+
 $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$GodotCppDir = Join-Path $RepoRoot "Dependencies\godot-cpp"
+$GodotCppDir = Join-Path (Join-Path $RepoRoot "Dependencies") "godot-cpp"
 
 if (-not (Test-Path -LiteralPath $GodotCppDir -PathType Container)) {
     throw "Cannot find directory: $GodotCppDir"
@@ -54,12 +107,13 @@ try {
         }
     }
 
-    Invoke-GodotCppBuild -Target "template_debug" -DevBuild $true -DebugSymbols $true -Jobs $Jobs
-    Invoke-GodotCppBuild -Target "template_release" -DevBuild $false -DebugSymbols $DebugSymbolsForRelease.IsPresent -Jobs $Jobs
+    Invoke-GodotCppBuild -Platform $Platform -Target "template_debug" -DevBuild $true -DebugSymbols $true -Jobs $Jobs
+    Invoke-GodotCppBuild -Platform $Platform -Target "template_release" -DevBuild $false -DebugSymbols $DebugSymbolsForRelease.IsPresent -Jobs $Jobs
 
     Write-Host ""
     Write-Host "========================================"
     Write-Host "godot-cpp build completed successfully."
+    Write-Host "Platform: $Platform"
     Write-Host "========================================"
 }
 finally {

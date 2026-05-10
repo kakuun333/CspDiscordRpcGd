@@ -11,10 +11,13 @@
 export.cfg
 export_credentials.cfg
 
-# Binary Files
+# Windows Binary Files
 *.dll
 ~*.dll
 ~*.pdb
+
+# Linux Binary Files
+*.so
 
 # Godot Export
 Export/

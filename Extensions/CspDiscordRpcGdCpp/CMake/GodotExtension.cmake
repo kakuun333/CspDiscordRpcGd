@@ -30,14 +30,37 @@ function(target_godot_cpp target)
     )
 
     find_library(GODOT_CPP_LIB_DEBUG
-            NAMES libgodot-cpp.${GODOT_PLATFORM}.template_debug.dev.${GODOT_ARCH}
+            NAMES
+            godot-cpp.${GODOT_PLATFORM}.template_debug.${GODOT_ARCH}
+            godot-cpp.${GODOT_PLATFORM}.template_debug.dev.${GODOT_ARCH}
             PATHS "${godot_cpp_lib_dir}"
+            NO_DEFAULT_PATH
     )
 
     find_library(GODOT_CPP_LIB_RELEASE
-            NAMES libgodot-cpp.${GODOT_PLATFORM}.template_release.${GODOT_ARCH}
+            NAMES
+            godot-cpp.${GODOT_PLATFORM}.template_release.${GODOT_ARCH}
+            godot-cpp.${GODOT_PLATFORM}.template_release.dev.${GODOT_ARCH}
             PATHS "${godot_cpp_lib_dir}"
+            NO_DEFAULT_PATH
     )
+
+    if(CMAKE_CONFIGURATION_TYPES)
+        if(NOT GODOT_CPP_LIB_DEBUG)
+            message(FATAL_ERROR "godot-cpp debug library not found in: ${godot_cpp_lib_dir}")
+        endif()
+        if(NOT GODOT_CPP_LIB_RELEASE)
+            message(FATAL_ERROR "godot-cpp release library not found in: ${godot_cpp_lib_dir}")
+        endif()
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        if(NOT GODOT_CPP_LIB_RELEASE)
+            message(FATAL_ERROR "godot-cpp release library not found in: ${godot_cpp_lib_dir}")
+        endif()
+    else()
+        if(NOT GODOT_CPP_LIB_DEBUG)
+            message(FATAL_ERROR "godot-cpp debug library not found in: ${godot_cpp_lib_dir}")
+        endif()
+    endif()
 
     target_link_libraries(${target} PRIVATE
             $<$<CONFIG:Debug>:${GODOT_CPP_LIB_DEBUG}>
@@ -96,6 +119,18 @@ function(set_gdextension_output target)
             RUNTIME_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_OUTPUT_DIR}"
             RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${OUTPUT_OUTPUT_DIR}"
             RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${OUTPUT_OUTPUT_DIR}"
+
+            LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_OUTPUT_DIR}"
+            LIBRARY_OUTPUT_DIRECTORY_DEBUG "${OUTPUT_OUTPUT_DIR}"
+            LIBRARY_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_OUTPUT_DIR}"
+            LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${OUTPUT_OUTPUT_DIR}"
+            LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL "${OUTPUT_OUTPUT_DIR}"
+
+            ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_OUTPUT_DIR}"
+            ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${OUTPUT_OUTPUT_DIR}"
+            ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_OUTPUT_DIR}"
+            ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${OUTPUT_OUTPUT_DIR}"
+            ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL "${OUTPUT_OUTPUT_DIR}"
     )
 
     if(MSVC)

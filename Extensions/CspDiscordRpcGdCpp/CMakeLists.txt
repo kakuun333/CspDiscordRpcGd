@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.25)
 
 project(CspDiscordRpcGdCpp LANGUAGES CXX)
 
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 include(BuildDefaults)
 include(EmbeddedSvgResources)
@@ -34,6 +38,10 @@ generate_embedded_svg_header(GENERATED_SVG_HEADER
 )
 get_filename_component(GENERATED_DIR "${GENERATED_SVG_HEADER}" DIRECTORY)
 
+
+if(UNIX)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 set(DISCORD_RPC_BUILD_TESTS OFF CACHE BOOL "Build discord-presence tests" FORCE)
 add_subdirectory("${GLAZE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Dependencies/glaze")
