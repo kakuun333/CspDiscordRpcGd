@@ -53,11 +53,6 @@
 #include <unordered_set>
 #include <vector>
 
-#ifdef _WIN32
-    #define NOMINMAX
-    #include <windows.h>
-#endif
-
 namespace
 {
 
@@ -345,32 +340,24 @@ void ApplyLineEditVisualStyle(godot::LineEdit* LineEditNode)
     return Extension == L".clip" || Extension == L".cmc" || Extension == L".lip";
 }
 
-void SetNativeWindowVisibility(const godot::Window* Window, bool bVisible)
+void SetWindowVisibility(godot::Window* Window, const bool bVisible)
 {
-#ifdef _WIN32
     if (Window == nullptr)
     {
         return;
     }
 
-    godot::DisplayServer* DisplayServer = godot::DisplayServer::get_singleton();
-    if (DisplayServer == nullptr)
+    if (bVisible)
     {
+        Window->show();
+        Window->set_mode(godot::Window::MODE_WINDOWED);
+        Window->move_to_foreground();
+        Window->grab_focus();
         return;
     }
 
-    const HWND NativeWindowHandle =
-        reinterpret_cast<HWND>(DisplayServer->window_get_native_handle(godot::DisplayServer::WINDOW_HANDLE, Window->get_window_id()));
-    if (NativeWindowHandle == nullptr)
-    {
-        return;
-    }
-
-    ShowWindow(NativeWindowHandle, bVisible ? SW_RESTORE : SW_HIDE);
-#else
-    static_cast<void>(Window);
-    static_cast<void>(bVisible);
-#endif
+    Window->set_mode(godot::Window::MODE_MINIMIZED);
+    Window->hide();
 }
 
 [[nodiscard]] std::filesystem::path GetPropertySettingsFilePath()
@@ -1390,20 +1377,27 @@ void CspDiscordRpcGdCppMainControl::ExecuteCloseAction(ECloseAction InCloseActio
         case ECloseAction::MinimizeToSystemTray:
             EnsureCloseStatusIndicator();
 
-            if (godot::Window* OwnerWindow = get_window())
-            {
-                OwnerWindow->hide();
-                SetNativeWindowVisibility(OwnerWindow, false);
-            }
-
             if (CloseStatusIndicator != nullptr)
             {
+                if (godot::Window* OwnerWindow = get_window())
+                {
+                    SetWindowVisibility(OwnerWindow, false);
+                }
+
                 CloseStatusIndicator->set_visible(true);
                 UpdateStatusText("Window minimized to the system tray.");
             }
             else
             {
-                godot::DisplayServer::get_singleton()->window_set_mode(godot::DisplayServer::WINDOW_MODE_MINIMIZED);
+                if (godot::DisplayServer* DisplayServer = godot::DisplayServer::get_singleton())
+                {
+                    DisplayServer->window_set_mode(godot::DisplayServer::WINDOW_MODE_MINIMIZED);
+                }
+                else if (godot::Window* OwnerWindow = get_window())
+                {
+                    OwnerWindow->set_mode(godot::Window::MODE_MINIMIZED);
+                }
+
                 UpdateStatusText("Status indicator is unavailable, so the window was minimized instead.");
             }
 
@@ -1924,11 +1918,7 @@ void CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorPressed(int32_t MouseB
 
     if (godot::Window* OwnerWindow = get_window())
     {
-        OwnerWindow->show();
-        OwnerWindow->set_mode(godot::Window::MODE_WINDOWED);
-        SetNativeWindowVisibility(OwnerWindow, true);
-        OwnerWindow->move_to_foreground();
-        OwnerWindow->grab_focus();
+        SetWindowVisibility(OwnerWindow, true);
     }
 
     grab_focus();
