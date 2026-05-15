@@ -26,3 +26,6 @@ cmake-build-codex
 
 # CspDiscordRpcGd
 Settings.json
+
+# clangd
+.cache
