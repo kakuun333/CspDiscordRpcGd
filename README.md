@@ -48,7 +48,3 @@
 - [godotengine/godot-cpp](https://github.com/godotengine/godot-cpp)
 - [stephenberry/glaze](https://github.com/stephenberry/glaze)
 - [EclipseMenu/discord-presence](https://github.com/EclipseMenu/discord-presence)
-
-## Support me
-
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kakuun333)

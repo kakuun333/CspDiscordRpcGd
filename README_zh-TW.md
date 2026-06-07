@@ -42,7 +42,3 @@
 
 4. 開啟 Discord Rich Presence  
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/TurnOnRichPresence.png">
-
-## 支持我
-
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kakuun333)
