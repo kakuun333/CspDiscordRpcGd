@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CspDiscordRpcGdCppWorkData.h"
+#include "godot_cpp/classes/input_event.hpp"
 #include "godot_cpp/classes/window.hpp"
 #include "godot_cpp/variant/vector2.hpp"
 #include "godot_cpp/variant/vector2i.hpp"
@@ -11,7 +12,6 @@ namespace godot
 
 class Button;
 class GridContainer;
-class InputEvent;
 class Label;
 class LineEdit;
 class VBoxContainer;
