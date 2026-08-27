@@ -54,6 +54,12 @@ public:
         SimplifiedChinese,
     };
 
+    enum class ECspIcon : int32_t
+    {
+        Original = 0,
+        Version5,
+    };
+
     CspDiscordRpcGdCppMainControl() = default;
 
     virtual void _ready() override;
@@ -66,6 +72,8 @@ protected:
     static void _bind_methods();
 
 private:
+    void SetCspIcon(int32_t NewCspIcon);
+    [[nodiscard]] godot::String GetCspIconLargeImageKey() const;
     void LoadPropertySettings();
     void SavePropertySettings() const;
     void ApplySelectedCspWorkPath(const godot::String& WorkPath, const godot::String& FallbackWorkName);
@@ -123,6 +131,7 @@ private:
     void OnWorksWindowTreeExited();
     void OnCollapsiblePropertyGroupToggled(godot::Button* ToggleButton, godot::Control* ContentContainer);
     void OnDiscordRichPresenceToggled(bool bToggled);
+    void OnCspIconSelected(int32_t SelectedIndex);
     void OnRichPresenceTextLanguageSelected(int32_t SelectedIndex);
     void OnUpdatePresencePressed();
 
@@ -136,6 +145,7 @@ private:
     CspDiscordRpcGdCppNavigationView* NavigationView{ nullptr };
     godot::CheckButton* DiscordRichPresenceCheckButton{ nullptr };
     godot::Button* ChooseCSPWorkButton{ nullptr };
+    godot::OptionButton* CspIconOptionButton{ nullptr };
     godot::OptionButton* RichPresenceTextLanguageOptionButton{ nullptr };
     godot::Button* UpdatePresenceButton{ nullptr };
     godot::LineEdit* ClipStudioCommonRootPathLineEdit{ nullptr };
@@ -156,6 +166,7 @@ private:
     godot::String SelectedCSPWorkPath;
     int64_t PresenceStartTimestamp{ 0 };
     ECloseAction CloseAction{ ECloseAction::MinimizeToSystemTray };
+    ECspIcon CspIcon{ ECspIcon::Version5 };
     ERichPresenceTextLanguage RichPresenceTextLanguage{ ERichPresenceTextLanguage::English };
     int32_t SelectedNavigationItem{ CspDiscordRpcGdCppNavigationView::NAVIGATION_VIEW_ITEM_HOME };
     bool bDontShowCloseWindowAgain{ false };

@@ -5,6 +5,7 @@
 #include "CspDiscordRpcGdCppWorkData.h"
 #include "CspDiscordRpcGdCppWorksWindow.h"
 #include "CspDiscordRpcService.h"
+#include "Generated/EmbeddedBinaryResources.h"
 #include "Generated/EmbeddedSvgResources.h"
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/check_button.hpp"
@@ -44,6 +45,7 @@
 #include "godot_cpp/variant/vector2.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -59,6 +61,8 @@ namespace
 constexpr float ResizeBorderThickness = 3.0f;
 constexpr float ResizeCornerExtent = 12.0f;
 constexpr const char* SettingsFileName = "Settings.json";
+constexpr int32_t CspIconMaxWidth = 48;
+constexpr int32_t CspIconTextureSize = CspIconMaxWidth * 2;
 
 using CspDiscordRpcGdCpp::CspDiscordRpcGdCppWorkData;
 
@@ -100,6 +104,29 @@ enum class EWindowControlButtonStyle : int32_t
 
     const godot::Error LoadError = Image->load_svg_from_string(SvgContent, 1.0f);
     ERR_FAIL_COND_V_MSG(LoadError != godot::OK, {}, godot::vformat("Failed to load embedded SVG. Error code: %d", static_cast<int32_t>(LoadError)));
+
+    return godot::ImageTexture::create_from_image(Image);
+}
+
+[[nodiscard]] godot::Ref<godot::Texture2D> CreateTextureFromPng(const uint8_t* PngData, int64_t PngDataSize)
+{
+    ERR_FAIL_NULL_V_MSG(PngData, {}, "Missing embedded PNG data.");
+    ERR_FAIL_COND_V_MSG(PngDataSize <= 0, {}, "Embedded PNG data is empty.");
+
+    godot::PackedByteArray PngBuffer;
+    PngBuffer.resize(PngDataSize);
+    std::memcpy(PngBuffer.ptrw(), PngData, static_cast<size_t>(PngDataSize));
+
+    godot::Ref<godot::Image> Image;
+    Image.instantiate();
+
+    const godot::Error LoadError = Image->load_png_from_buffer(PngBuffer);
+    ERR_FAIL_COND_V_MSG(LoadError != godot::OK, {}, godot::vformat("Failed to load embedded PNG. Error code: %d", static_cast<int32_t>(LoadError)));
+
+    Image->resize(CspIconTextureSize, CspIconTextureSize, godot::Image::INTERPOLATE_LANCZOS);
+
+    const godot::Error MipmapError = Image->generate_mipmaps();
+    ERR_FAIL_COND_V_MSG(MipmapError != godot::OK, {}, godot::vformat("Failed to generate mipmaps for embedded PNG. Error code: %d", static_cast<int32_t>(MipmapError)));
 
     return godot::ImageTexture::create_from_image(Image);
 }
@@ -720,6 +747,7 @@ void CspDiscordRpcGdCppMainControl::_bind_methods()
     godot::ClassDB::bind_method(godot::D_METHOD("on_window_control_button_mouse_exited", "window_control_button"),
                                 &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited);
     godot::ClassDB::bind_method(godot::D_METHOD("on_collapsible_property_group_toggled", "toggle_button", "content_container"), &CspDiscordRpcGdCppMainControl::OnCollapsiblePropertyGroupToggled);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_csp_icon_selected", "selected_index"), &CspDiscordRpcGdCppMainControl::OnCspIconSelected);
     godot::ClassDB::bind_method(godot::D_METHOD("on_rich_presence_text_language_selected", "selected_index"), &CspDiscordRpcGdCppMainControl::OnRichPresenceTextLanguageSelected);
     godot::ClassDB::bind_method(godot::D_METHOD("on_update_presence_pressed"), &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed);
 
@@ -895,6 +923,25 @@ void CspDiscordRpcGdCppMainControl::_ready()
     ApplyButtonVisualStyle(UpdatePresenceButton, true);
     UpdatePresenceButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed));
     AddPropertyRow(PropertyGridContainer, "Update Presence", UpdatePresenceButton);
+
+    const godot::Ref<godot::Texture2D> CspIconOriginalTexture =
+        CreateTextureFromPng(EmbeddedBinaryResources::CspIconOriginal, sizeof(EmbeddedBinaryResources::CspIconOriginal));
+    const godot::Ref<godot::Texture2D> CspIconVersion5Texture =
+        CreateTextureFromPng(EmbeddedBinaryResources::CspIconVersion5, sizeof(EmbeddedBinaryResources::CspIconVersion5));
+
+    CspIconOptionButton = CreateNamedControl<godot::OptionButton>("CspIcon");
+    ApplyButtonVisualStyle(CspIconOptionButton);
+    CspIconOptionButton->set_texture_filter(godot::CanvasItem::TEXTURE_FILTER_LINEAR_WITH_MIPMAPS);
+    CspIconOptionButton->add_theme_constant_override("icon_max_width", CspIconMaxWidth);
+    CspIconOptionButton->add_icon_item(CspIconOriginalTexture, "Original", static_cast<int32_t>(ECspIcon::Original));
+    CspIconOptionButton->add_icon_item(CspIconVersion5Texture, "Version 5.0", static_cast<int32_t>(ECspIcon::Version5));
+    CspIconOptionButton->get_popup()->set_default_canvas_item_texture_filter(godot::Viewport::DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR_WITH_MIPMAPS);
+    CspIconOptionButton->get_popup()->set_item_icon_max_width(static_cast<int32_t>(ECspIcon::Original), CspIconMaxWidth);
+    CspIconOptionButton->get_popup()->set_item_icon_max_width(static_cast<int32_t>(ECspIcon::Version5), CspIconMaxWidth);
+    CspIconOptionButton->select(static_cast<int32_t>(CspIcon));
+    CspIconOptionButton->connect("item_selected", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCspIconSelected));
+    CspIconOptionButton->connect("item_selected", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnPropertySettingsIndexChanged));
+    AddPropertyRow(PropertyGridContainer, "CSP Icon", CspIconOptionButton);
 
     RichPresenceTextLanguageOptionButton = CreateNamedControl<godot::OptionButton>("RichPresenceTextLanguage");
     ApplyButtonVisualStyle(RichPresenceTextLanguageOptionButton);
@@ -1126,6 +1173,37 @@ int32_t CspDiscordRpcGdCppMainControl::GetRichPresenceTextLanguage() const
     return static_cast<int32_t>(RichPresenceTextLanguage);
 }
 
+void CspDiscordRpcGdCppMainControl::SetCspIcon(int32_t NewCspIcon)
+{
+    switch (static_cast<ECspIcon>(NewCspIcon))
+    {
+        case ECspIcon::Original:
+        case ECspIcon::Version5:
+            CspIcon = static_cast<ECspIcon>(NewCspIcon);
+            break;
+        default:
+            CspIcon = ECspIcon::Version5;
+            break;
+    }
+
+    if (CspIconOptionButton != nullptr)
+    {
+        CspIconOptionButton->select(static_cast<int32_t>(CspIcon));
+    }
+}
+
+godot::String CspDiscordRpcGdCppMainControl::GetCspIconLargeImageKey() const
+{
+    switch (CspIcon)
+    {
+        case ECspIcon::Original:
+            return "https://cdn.discordapp.com/app-icons/1351785436850163733/be7cdabb8b164c564f9e844ba209a2b6.png?size=256";
+        case ECspIcon::Version5:
+        default:
+            return "https://cdn.discordapp.com/app-icons/1542670464470614146/d304a3b4a7fc92092a5c6f906fe85769.png?size=256";
+    }
+}
+
 void CspDiscordRpcGdCppMainControl::LoadPropertySettings()
 {
     const std::filesystem::path PropertySettingsPath = GetPropertySettingsFilePath();
@@ -1159,6 +1237,11 @@ void CspDiscordRpcGdCppMainControl::LoadPropertySettings()
     if (PropertySettings.has("RichPresenceTextLanguage"))
     {
         SetRichPresenceTextLanguage(static_cast<int32_t>(PropertySettings["RichPresenceTextLanguage"]));
+    }
+
+    if (PropertySettings.has("CspIcon"))
+    {
+        SetCspIcon(static_cast<int32_t>(PropertySettings["CspIcon"]));
     }
 
     if (PropertySettings.has("CloseAction"))
@@ -1239,6 +1322,7 @@ void CspDiscordRpcGdCppMainControl::SavePropertySettings() const
     }
 
     godot::Dictionary PropertySettings;
+    PropertySettings["CspIcon"] = static_cast<int32_t>(CspIcon);
     PropertySettings["RichPresenceTextLanguage"] = static_cast<int32_t>(RichPresenceTextLanguage);
     PropertySettings["CloseAction"] = static_cast<int32_t>(CloseAction);
     PropertySettings["DontShowCloseWindowAgain"] = bDontShowCloseWindowAgain;
@@ -1976,9 +2060,9 @@ void CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled(bool bToggled)
 {
     if (bToggled)
     {
-        static const godot::String CLIENT_ID = "1351785436850163733";
+        static const godot::String DiscordApplicationId = "1351785436850163733";
 
-        if (!CspDiscordRpcService::Get().Initialize(CLIENT_ID))
+        if (!CspDiscordRpcService::Get().Initialize(DiscordApplicationId))
         {
             if (DiscordRichPresenceCheckButton != nullptr)
             {
@@ -1999,6 +2083,16 @@ void CspDiscordRpcGdCppMainControl::OnDiscordRichPresenceToggled(bool bToggled)
         CspDiscordRpcService::Get().Shutdown();
         PresenceStartTimestamp = 0;
         UpdateStatusText("Discord RPC is disabled.");
+    }
+}
+
+void CspDiscordRpcGdCppMainControl::OnCspIconSelected(int32_t SelectedIndex)
+{
+    SetCspIcon(SelectedIndex);
+
+    if (CspDiscordRpcService::Get().IsInitialized())
+    {
+        OnUpdatePresencePressed();
     }
 }
 
@@ -2027,7 +2121,7 @@ void CspDiscordRpcGdCppMainControl::OnUpdatePresencePressed()
     PresenceData.Details = SelectedCspWorkData.TotalWorkingTime.is_empty()
                                ? godot::String()
                                : godot::vformat(GetRichPresenceFormatText(RichPresenceTextLanguage, ERichPresenceTextType::Details), SelectedCspWorkData.TotalWorkingTime);
-    PresenceData.LargeImageKey = "https://cdn.discordapp.com/app-icons/1351785436850163733/be7cdabb8b164c564f9e844ba209a2b6.png?size=256";
+    PresenceData.LargeImageKey = GetCspIconLargeImageKey();
     PresenceData.LargeImageText = SelectedCspWorkData.CspVersion.is_empty()
                                       ? godot::String()
                                       : godot::vformat(GetRichPresenceFormatText(RichPresenceTextLanguage, ERichPresenceTextType::LargeImageText), SelectedCspWorkData.CspVersion);

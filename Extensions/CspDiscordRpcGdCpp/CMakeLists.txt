@@ -8,6 +8,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 include(BuildDefaults)
+include(EmbeddedBinaryResources)
 include(EmbeddedSvgResources)
 include(GodotExtension)
 
@@ -36,7 +37,16 @@ generate_embedded_svg_header(GENERATED_SVG_HEADER
         NAMESPACE "${PROJECT_NAME}::EmbeddedSvgResources"
         FILES ${RESOURCE_SVG_FILES}
 )
-get_filename_component(GENERATED_DIR "${GENERATED_SVG_HEADER}" DIRECTORY)
+
+set(RESOURCE_BINARY_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/CspIconOriginal.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Icons/CspIconVersion5.png"
+)
+
+generate_embedded_binary_header(GENERATED_BINARY_HEADER
+        NAMESPACE "${PROJECT_NAME}::EmbeddedBinaryResources"
+        FILES ${RESOURCE_BINARY_FILES}
+)
 
 
 if(UNIX)
@@ -66,6 +76,7 @@ add_library(${PROJECT_NAME} SHARED
         Source/CspDiscordRpcGdCppWorkItem.h
         Source/CspDiscordRpcGdCppWorksWindow.cpp
         Source/CspDiscordRpcGdCppWorksWindow.h
+        ${GENERATED_BINARY_HEADER}
         ${GENERATED_SVG_HEADER}
 )
 
