@@ -7,3 +7,6 @@
 [submodule "Extensions/CspDiscordRpcGdCpp/Dependencies/discord-presence"]
 	path = Extensions/CspDiscordRpcGdCpp/Dependencies/discord-presence
 	url = https://github.com/EclipseMenu/discord-presence
+[submodule "Extensions/CspDiscordRpcGdCpp/Dependencies/fmt"]
+	path = Extensions/CspDiscordRpcGdCpp/Dependencies/fmt
+	url = https://github.com/fmtlib/fmt

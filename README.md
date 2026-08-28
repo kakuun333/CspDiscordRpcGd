@@ -46,5 +46,6 @@
 ## Credits
 
 - [godotengine/godot-cpp](https://github.com/godotengine/godot-cpp)
+- [fmtlib/fmt](https://github.com/fmtlib/fmt)
 - [stephenberry/glaze](https://github.com/stephenberry/glaze)
 - [EclipseMenu/discord-presence](https://github.com/EclipseMenu/discord-presence)

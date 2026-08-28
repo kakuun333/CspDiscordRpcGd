@@ -16,6 +16,7 @@ configure_cpp_defaults(STANDARD 23)
 detect_godot_platform(PLATFORM ARCH)
 
 set(DISCORD_PRESENCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/discord-presence")
+set(FMT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/fmt")
 set(GLAZE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/glaze")
 
 # Generate Resource SVG
@@ -54,6 +55,10 @@ if(UNIX)
 endif()
 
 set(DISCORD_RPC_BUILD_TESTS OFF CACHE BOOL "Build discord-presence tests" FORCE)
+set(FMT_DOC OFF CACHE BOOL "Generate fmt documentation" FORCE)
+set(FMT_INSTALL OFF CACHE BOOL "Generate fmt install target" FORCE)
+set(FMT_TEST OFF CACHE BOOL "Build fmt tests" FORCE)
+add_subdirectory("${FMT_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Dependencies/fmt")
 add_subdirectory("${GLAZE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Dependencies/glaze")
 add_subdirectory("${DISCORD_PRESENCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Dependencies/discord-presence")
 
@@ -103,6 +108,7 @@ set_gdextension_output(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         discord-rpc
+        fmt::fmt
         glaze::glaze
 )
 
