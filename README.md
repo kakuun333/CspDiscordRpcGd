@@ -25,6 +25,9 @@
   - Simplified Chinese
 
 - Supports Discord Rich Presence buttons
+> [!WARNING]
+> Discord may not show activity buttons on your own profile.  
+> It might be worth checking from another account to confirm whether they're visible.
 
 ## Usage
 
