@@ -24,9 +24,12 @@
   - 繁體中文
   - 簡體中文
 
+- 支援選擇 Original 或 Version 5.0 圖示當作你的 Discord Rich Presence 的大圖示（顯示於 Large Image Key）
+<img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/CspIconOption.png">
+
 - 支援 Discord Rich Presence 按鈕
 > [!WARNING]
-> Discord 不會在當前帳號的個人資料中顯示動態的按鈕，你需要另外使用其他帳號來查看按鈕是否生效。
+> Discord 不會在當前帳號的個人資料中顯示動態的按鈕，你需要另外使用其他帳號來查看當前帳號的按鈕是否生效。
 
 ## 使用方式
 

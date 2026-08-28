@@ -16,13 +16,16 @@
 - Search existing CSP works for additional information, including:
   - Work name
   - Total working time
-  - CSP version used for the work (displayed as the large image text)
+  - CSP version used for the work (displayed as the Large Image Text)
 
 - Supports the following languages:
   - English
   - Japanese
   - Traditional Chinese
   - Simplified Chinese
+
+- Switch between Original and Version 5.0 CSP icons for your Discord Rich Presence. (displayed as the Large Image Key)
+<img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/CspIconOption.png">
 
 - Supports Discord Rich Presence buttons
 > [!WARNING]

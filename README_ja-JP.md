@@ -24,6 +24,9 @@
   - 繁体中国語
   - 簡体中国語
 
+- Discord Rich Presence に表示するクリスタのメインアイコンを、Original と Version 5.0 から選択できます（Large Image Keyとして表示）
+<img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/CspIconOption.png">
+
 - Discord Rich Presence のボタンに対応
 > [!WARNING]
 > Discord Rich Presence のボタンは、自分のアカウントからは表示されない場合があります。  
