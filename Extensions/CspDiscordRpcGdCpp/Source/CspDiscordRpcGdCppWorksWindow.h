@@ -49,6 +49,7 @@ private:
     void EnsureUiBuilt();
     void RebuildWorkItems();
     void SyncSelectionWithFilteredWorks();
+    void UpdateResponsiveLayout() const;
     void UpdateChooseButtonState() const;
     [[nodiscard]] bool MatchesSearchText(const CspDiscordRpcGdCppWorkData& Work) const;
     void OnTitleBarGuiInput(const godot::Ref<godot::InputEvent>& Event);
@@ -59,6 +60,7 @@ private:
     [[nodiscard]] godot::Vector2i GetCenteredPosition() const;
     [[nodiscard]] godot::Vector2i GetClampedPosition(const godot::Vector2i& CandidatePosition) const;
     void OnSearchTextChanged(const godot::String& NewText);
+    void OnWindowSizeChanged();
     void OnWorkItemPressed(const godot::String& WorkName, const godot::String& WorkPath);
     void OnCancelPressed();
     void OnChoosePressed();

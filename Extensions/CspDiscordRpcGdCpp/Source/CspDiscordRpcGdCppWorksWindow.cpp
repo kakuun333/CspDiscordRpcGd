@@ -31,6 +31,10 @@ constexpr int32_t PreferredWorksWindowHeight{ 640 };
 constexpr int32_t MinimumWorksWindowWidth{ 420 };
 constexpr int32_t MinimumWorksWindowHeight{ 320 };
 constexpr int32_t WorksWindowViewportPadding{ 32 };
+constexpr int32_t WorksWindowContentHorizontalInsets{ 64 };
+constexpr int32_t WorkItemMinimumWidth{ 180 };
+constexpr int32_t WorkGridHorizontalSeparation{ 16 };
+constexpr float ActionButtonMinimumHeight{ 32.0F };
 
 [[nodiscard]] int32_t ClampInt32(const int32_t Value, const int32_t MinValue, const int32_t MaxValue)
 {
@@ -247,7 +251,9 @@ void ApplyTitleBarLabelVisualStyle(godot::Label* LabelNode)
 {
     godot::Button* ActionButton{ memnew(godot::Button) };
     ActionButton->set_text(Text);
-    ActionButton->set_custom_minimum_size({ 88.0F, 32.0F });
+    ActionButton->set_clip_text(true);
+    ActionButton->set_custom_minimum_size({ 0.0F, ActionButtonMinimumHeight });
+    ActionButton->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ApplyButtonVisualStyle(ActionButton);
     return ActionButton;
 }
@@ -281,6 +287,7 @@ void CspDiscordRpcGdCppWorksWindow::_bind_methods()
 {
     godot::ClassDB::bind_method(godot::D_METHOD("on_title_bar_gui_input", "event"), &CspDiscordRpcGdCppWorksWindow::OnTitleBarGuiInput);
     godot::ClassDB::bind_method(godot::D_METHOD("on_search_text_changed", "new_text"), &CspDiscordRpcGdCppWorksWindow::OnSearchTextChanged);
+    godot::ClassDB::bind_method(godot::D_METHOD("on_window_size_changed"), &CspDiscordRpcGdCppWorksWindow::OnWindowSizeChanged);
     godot::ClassDB::bind_method(godot::D_METHOD("on_work_item_pressed", "work_name", "work_path"), &CspDiscordRpcGdCppWorksWindow::OnWorkItemPressed);
     godot::ClassDB::bind_method(godot::D_METHOD("on_cancel_pressed"), &CspDiscordRpcGdCppWorksWindow::OnCancelPressed);
     godot::ClassDB::bind_method(godot::D_METHOD("on_choose_pressed"), &CspDiscordRpcGdCppWorksWindow::OnChoosePressed);
@@ -294,6 +301,7 @@ void CspDiscordRpcGdCppWorksWindow::_ready()
 {
     EnsureUiBuilt();
     RebuildWorkItems();
+    UpdateResponsiveLayout();
 }
 
 void CspDiscordRpcGdCppWorksWindow::_input(const godot::Ref<godot::InputEvent>& Event)
@@ -329,6 +337,7 @@ void CspDiscordRpcGdCppWorksWindow::ApplyBoundsLayout(const bool bCenterInBounds
 {
     EnsureUiBuilt();
     set_size(GetBoundedWindowSize());
+    UpdateResponsiveLayout();
 
     if (bCenterInBounds)
     {
@@ -383,6 +392,7 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     set_wrap_controls(false);
     set_size({ PreferredWorksWindowWidth, PreferredWorksWindowHeight });
     set_min_size({ 1, 1 });
+    connect("size_changed", callable_mp(this, &CspDiscordRpcGdCppWorksWindow::OnWindowSizeChanged));
 
 
     godot::PanelContainer* DialogPanel{ memnew(godot::PanelContainer) };
@@ -442,9 +452,9 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     DialogMargin->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     DialogMargin->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
     DialogMargin->add_theme_constant_override("margin_left", 16);
-    DialogMargin->add_theme_constant_override("margin_top", 16);
+    DialogMargin->add_theme_constant_override("margin_top", 8);
     DialogMargin->add_theme_constant_override("margin_right", 16);
-    DialogMargin->add_theme_constant_override("margin_bottom", 16);
+    DialogMargin->add_theme_constant_override("margin_bottom", 12);
     RootContainer->add_child(DialogMargin);
 
     godot::VBoxContainer* BodyContainer{ memnew(godot::VBoxContainer) };
@@ -454,6 +464,19 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     BodyContainer->add_theme_constant_override("separation", 10);
     DialogMargin->add_child(BodyContainer);
 
+    godot::Control* ContentViewport{ memnew(godot::Control) };
+    ContentViewport->set_name("ContentViewport");
+    ContentViewport->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    ContentViewport->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
+    ContentViewport->set_clip_contents(true);
+    BodyContainer->add_child(ContentViewport);
+
+    godot::VBoxContainer* ContentContainer{ memnew(godot::VBoxContainer) };
+    ContentContainer->set_name("ContentContainer");
+    ContentContainer->set_anchors_and_offsets_preset(godot::Control::PRESET_FULL_RECT);
+    ContentContainer->add_theme_constant_override("separation", 10);
+    ContentViewport->add_child(ContentContainer);
+
     SearchLineEdit = memnew(godot::LineEdit);
     SearchLineEdit->set_name("SearchLineEdit");
     SearchLineEdit->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
@@ -462,7 +485,7 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     SearchLineEdit->set_clear_button_enabled(true);
     ApplyLineEditVisualStyle(SearchLineEdit);
     SearchLineEdit->connect("text_changed", callable_mp(this, &CspDiscordRpcGdCppWorksWindow::OnSearchTextChanged));
-    BodyContainer->add_child(SearchLineEdit);
+    ContentContainer->add_child(SearchLineEdit);
 
     godot::ScrollContainer* ScrollContainer{ memnew(godot::ScrollContainer) };
     ScrollContainer->set_name("ScrollContainer");
@@ -470,15 +493,15 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     ScrollContainer->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
     ScrollContainer->set_horizontal_scroll_mode(godot::ScrollContainer::SCROLL_MODE_DISABLED);
     ScrollContainer->set_vertical_scroll_mode(godot::ScrollContainer::SCROLL_MODE_AUTO);
-    BodyContainer->add_child(ScrollContainer);
+    ContentContainer->add_child(ScrollContainer);
 
     WorkGridContainer = memnew(godot::GridContainer);
     WorkGridContainer->set_name("WorkGridContainer");
-    WorkGridContainer->set_columns(3);
+    WorkGridContainer->set_columns(1);
     WorkGridContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     WorkGridContainer->set_v_size_flags(godot::Control::SIZE_EXPAND_FILL);
-    WorkGridContainer->add_theme_constant_override("h_separation", 16);
-    WorkGridContainer->add_theme_constant_override("v_separation", 16);
+    WorkGridContainer->add_theme_constant_override("h_separation", WorkGridHorizontalSeparation);
+    WorkGridContainer->add_theme_constant_override("v_separation", WorkGridHorizontalSeparation);
     ScrollContainer->add_child(WorkGridContainer);
 
     EmptyStateLabel = memnew(godot::Label);
@@ -488,10 +511,11 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     ApplyLabelVisualStyle(EmptyStateLabel, godot::Color::hex(0xb7d7f2ff));
     EmptyStateLabel->set_text("No works match the current search.");
     EmptyStateLabel->set_visible(false);
-    BodyContainer->add_child(EmptyStateLabel);
+    ContentContainer->add_child(EmptyStateLabel);
 
     godot::HBoxContainer* FooterContainer{ memnew(godot::HBoxContainer) };
     FooterContainer->set_name("FooterContainer");
+    FooterContainer->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
     FooterContainer->set_alignment(godot::BoxContainer::ALIGNMENT_END);
     FooterContainer->add_theme_constant_override("separation", 8);
     BodyContainer->add_child(FooterContainer);
@@ -505,6 +529,8 @@ void CspDiscordRpcGdCppWorksWindow::EnsureUiBuilt()
     ChooseButton->set_disabled(true);
     ChooseButton->connect("pressed", callable_mp(this, &CspDiscordRpcGdCppWorksWindow::OnChoosePressed));
     FooterContainer->add_child(ChooseButton);
+
+    UpdateResponsiveLayout();
 }
 
 void CspDiscordRpcGdCppWorksWindow::RebuildWorkItems()
@@ -567,6 +593,31 @@ void CspDiscordRpcGdCppWorksWindow::SyncSelectionWithFilteredWorks()
 
     SelectedWorkName = "";
     SelectedWorkPath = "";
+}
+
+void CspDiscordRpcGdCppWorksWindow::UpdateResponsiveLayout() const
+{
+    if (WorkGridContainer == nullptr)
+    {
+        return;
+    }
+
+    const int32_t AvailableContentWidth{ get_size().x - WorksWindowContentHorizontalInsets };
+    const int32_t ThreeColumnMinimumWidth{ WorkItemMinimumWidth * 3 + WorkGridHorizontalSeparation * 2 };
+    const int32_t TwoColumnMinimumWidth{ WorkItemMinimumWidth * 2 + WorkGridHorizontalSeparation };
+
+    if (AvailableContentWidth >= ThreeColumnMinimumWidth)
+    {
+        WorkGridContainer->set_columns(3);
+    }
+    else if (AvailableContentWidth >= TwoColumnMinimumWidth)
+    {
+        WorkGridContainer->set_columns(2);
+    }
+    else
+    {
+        WorkGridContainer->set_columns(1);
+    }
 }
 
 void CspDiscordRpcGdCppWorksWindow::UpdateChooseButtonState() const
@@ -672,6 +723,11 @@ void CspDiscordRpcGdCppWorksWindow::OnSearchTextChanged(const godot::String& New
 {
     SearchText = NewText;
     RebuildWorkItems();
+}
+
+void CspDiscordRpcGdCppWorksWindow::OnWindowSizeChanged()
+{
+    UpdateResponsiveLayout();
 }
 
 void CspDiscordRpcGdCppWorksWindow::OnWorkItemPressed(const godot::String& WorkName, const godot::String& WorkPath)
