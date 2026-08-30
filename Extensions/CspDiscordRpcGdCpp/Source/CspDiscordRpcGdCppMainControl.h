@@ -82,6 +82,7 @@ private:
     void OnPropertySettingsIndexChanged(int32_t Value);
     void OnPropertySettingsTextChanged(const godot::String& Value);
     void EnsureCloseStatusIndicator();
+    void HideCloseStatusIndicator();
     void ExecuteCloseAction(ECloseAction CloseAction);
     void SetWindowControlButtonHighlight(godot::Button* WindowControlButton, const godot::Color& HighlightColor) const;
     void SetModalBackgroundVisible(bool bVisible);

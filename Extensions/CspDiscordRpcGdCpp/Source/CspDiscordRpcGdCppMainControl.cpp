@@ -382,17 +382,30 @@ void SetWindowVisibility(godot::Window* Window, const bool bVisible)
         return;
     }
 
+#if defined(MACOS_ENABLED)
+    if (IsMacOs())
+    {
+        if (godot::DisplayServer* DisplayServer = godot::DisplayServer::get_singleton())
+        {
+            const int64_t NativeWindowHandle{ DisplayServer->window_get_native_handle(godot::DisplayServer::WINDOW_HANDLE, Window->get_window_id()) };
+            const bool bVisibilityChanged{ bVisible ? CspDiscordRpcGdCpp::MacOsWindowUtils::ShowWindow(NativeWindowHandle)
+                                                    : CspDiscordRpcGdCpp::MacOsWindowUtils::HideWindow(NativeWindowHandle) };
+            if (bVisibilityChanged)
+            {
+                return;
+            }
+        }
+    }
+#endif
+
     if (bVisible)
     {
-        Window->show();
         Window->set_mode(godot::Window::MODE_WINDOWED);
-        Window->move_to_foreground();
         Window->grab_focus();
         return;
     }
 
     Window->set_mode(godot::Window::MODE_MINIMIZED);
-    Window->hide();
 }
 
 [[nodiscard]] std::filesystem::path GetPropertySettingsFilePath()
@@ -1450,9 +1463,16 @@ void CspDiscordRpcGdCppMainControl::EnsureCloseStatusIndicator()
     CloseStatusIndicatorMenu->add_item("Exit", 1);
     CloseStatusIndicatorMenu->connect("id_pressed", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorMenuIdPressed));
     add_child(CloseStatusIndicatorMenu);
-    CloseStatusIndicator->set_menu(CloseStatusIndicatorMenu->get_path());
-
     add_child(CloseStatusIndicator);
+    CloseStatusIndicator->set_menu(CloseStatusIndicatorMenu->get_path());
+}
+
+void CspDiscordRpcGdCppMainControl::HideCloseStatusIndicator()
+{
+    if (CloseStatusIndicator != nullptr)
+    {
+        CloseStatusIndicator->set_visible(false);
+    }
 }
 
 void CspDiscordRpcGdCppMainControl::SetWindowControlButtonHighlight(godot::Button* WindowControlButton, const godot::Color& HighlightColor) const
@@ -1502,11 +1522,6 @@ void CspDiscordRpcGdCppMainControl::ExecuteCloseAction(ECloseAction InCloseActio
 
             break;
         case ECloseAction::Close:
-            if (CloseStatusIndicator != nullptr)
-            {
-                CloseStatusIndicator->set_visible(false);
-            }
-
             if (godot::SceneTree* SceneTree = get_tree())
             {
                 SceneTree->quit();
@@ -2020,17 +2035,12 @@ void CspDiscordRpcGdCppMainControl::OnCloseStatusIndicatorPressed(int32_t MouseB
         return;
     }
 
-    if (CloseStatusIndicator != nullptr)
-    {
-        CloseStatusIndicator->set_visible(false);
-    }
-
     if (godot::Window* OwnerWindow = get_window())
     {
         SetWindowVisibility(OwnerWindow, true);
     }
 
-    grab_focus();
+    callable_mp(this, &CspDiscordRpcGdCppMainControl::HideCloseStatusIndicator).call_deferred();
     UpdateStatusText("Window restored from the system tray.");
 }
 

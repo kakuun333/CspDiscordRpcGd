@@ -4,17 +4,27 @@
 
 namespace CspDiscordRpcGdCpp::MacOsWindowUtils
 {
+namespace
+{
+
+[[nodiscard]] NSWindow* GetActiveWindow()
+{
+    NSWindow* ActiveWindow{ NSApp.keyWindow };
+    if (ActiveWindow == nil)
+    {
+        ActiveWindow = NSApp.mainWindow;
+    }
+
+    return ActiveWindow;
+}
+
+} // namespace
 
 bool MinimizeActiveWindow()
 {
     @autoreleasepool
     {
-        NSWindow* ActiveWindow{ NSApp.keyWindow };
-        if (ActiveWindow == nil)
-        {
-            ActiveWindow = NSApp.mainWindow;
-        }
-
+        NSWindow* ActiveWindow{ GetActiveWindow() };
         if (ActiveWindow == nil)
         {
             return false;
@@ -44,6 +54,48 @@ bool MinimizeActiveWindow()
         ActiveWindow.styleMask = OriginalStyleMask;
         ActiveWindow.titlebarAppearsTransparent = bOriginalTitlebarAppearsTransparent;
         ActiveWindow.titleVisibility = OriginalTitleVisibility;
+
+        return true;
+    }
+}
+
+bool HideWindow(const int64_t NativeWindowHandle)
+{
+    @autoreleasepool
+    {
+        NSWindow* Window{ reinterpret_cast<NSWindow*>(NativeWindowHandle) };
+        if (Window == nil)
+        {
+            return false;
+        }
+
+        [Window orderOut:nil];
+        return !Window.visible;
+    }
+}
+
+bool ShowWindow(const int64_t NativeWindowHandle)
+{
+    @autoreleasepool
+    {
+        NSWindow* Window{ reinterpret_cast<NSWindow*>(NativeWindowHandle) };
+        if (Window == nil)
+        {
+            return false;
+        }
+
+        if (Window.miniaturized)
+        {
+            [Window deminiaturize:nil];
+        }
+
+        [NSApp activateIgnoringOtherApps:YES];
+        [Window makeKeyAndOrderFront:nil];
+
+        if (!Window.visible)
+        {
+            return false;
+        }
 
         return true;
     }
