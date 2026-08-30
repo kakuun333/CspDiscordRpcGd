@@ -7,6 +7,9 @@
 #include "CspDiscordRpcService.h"
 #include "Generated/EmbeddedBinaryResources.h"
 #include "Generated/EmbeddedSvgResources.h"
+#if defined(MACOS_ENABLED)
+#include "Platform/MacOsWindowUtils.h"
+#endif
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/check_button.hpp"
 #include "godot_cpp/classes/color_rect.hpp"
@@ -1842,7 +1845,17 @@ void CspDiscordRpcGdCppMainControl::OnResizeHandleGuiInput(const godot::Ref<godo
 
 void CspDiscordRpcGdCppMainControl::OnMinimizePressed()
 {
-    godot::DisplayServer::get_singleton()->window_set_mode(godot::DisplayServer::WINDOW_MODE_MINIMIZED);
+#if defined(MACOS_ENABLED)
+    if (IsMacOs() && MacOsWindowUtils::MinimizeActiveWindow())
+    {
+        return;
+    }
+#endif
+
+    if (godot::DisplayServer* DisplayServer = godot::DisplayServer::get_singleton())
+    {
+        DisplayServer->window_set_mode(godot::DisplayServer::WINDOW_MODE_MINIMIZED);
+    }
 }
 
 void CspDiscordRpcGdCppMainControl::OnMaximizePressed()

@@ -22,6 +22,10 @@ endif()
 
 project(CspDiscordRpcGdCpp LANGUAGES CXX)
 
+if(APPLE)
+    enable_language(OBJCXX)
+endif()
+
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
@@ -133,7 +137,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 if(APPLE)
+    target_sources(${PROJECT_NAME} PRIVATE
+            Source/Platform/MacOsWindowUtils.h
+            Source/Platform/MacOsWindowUtils.mm
+    )
+
+    find_library(APPKIT_FRAMEWORK AppKit REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE "${APPKIT_FRAMEWORK}")
+
     set_target_properties(${PROJECT_NAME} PROPERTIES
+            OBJCXX_STANDARD 23
+            OBJCXX_STANDARD_REQUIRED ON
+            OBJCXX_EXTENSIONS OFF
             MACOSX_RPATH ON
             BUILD_RPATH "@loader_path"
             INSTALL_RPATH "@loader_path"
