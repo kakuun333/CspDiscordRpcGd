@@ -11,6 +11,14 @@
   <a href="./README.md">English</a>｜<a href="./README_ja-JP.md">日本語</a>
 </h3>
 
+## 平台支援
+
+| 平台 | 架構 | 狀態 |
+| --- | --- | --- |
+| Windows | x86-64 | 支援 |
+| macOS | Universal (Apple Silicon / Intel) | 支援 |
+| Linux | — | 開發中 |
+
 ## 功能特色
 
 - 可搜尋現有的 CSP 作品並顯示更多資訊，包括：

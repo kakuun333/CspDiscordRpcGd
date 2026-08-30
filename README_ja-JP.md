@@ -11,6 +11,14 @@
   <a href="./README_zh-TW.md">繁體中文</a>｜<a href="./README.md">English</a>
 </h3>
 
+## 対応プラットフォーム
+
+| プラットフォーム | アーキテクチャ | 対応状況 |
+| --- | --- | --- |
+| Windows | x86-64 | 対応 |
+| macOS | Universal (Apple Silicon / Intel) | 対応 |
+| Linux | — | 開発中 |
+
 ## 特徴
 
 - 既存のクリスタ作品を検索し、以下の追加情報を表示できます：

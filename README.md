@@ -3,13 +3,23 @@
 <p align="center">
   <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Icon.svg">
 </p>
-<h3 align="center">CspDiscordRpcGd</h1>
+
+<h3 align="center">CspDiscordRpcGd</h3>
 <h4 align="center">
   A Discord Rich Presence client for CLIP STUDIO PAINT.
 </h4>
+
 <h3 align="center">
   <a href="./README_zh-TW.md">繁體中文</a>｜<a href="./README_ja-JP.md">日本語</a>
 </h3>
+
+## Platform Support
+
+| Platform | Architecture | Status |
+| --- | --- | --- |
+| Windows | x86-64 | Supported |
+| macOS | Universal (Apple Silicon / Intel) | Supported |
+| Linux | — | Work in progress |
 
 ## Features
 
@@ -25,28 +35,34 @@
   - Simplified Chinese
 
 - Switch between Original and Version 5.0 CSP icons for your Discord Rich Presence. (displayed as the Large Image Key)
+
 <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/CspIconOption.png">
 
 - Supports Discord Rich Presence buttons
+
 > [!WARNING]
 > Discord may not show activity buttons on your own profile.  
 > It might be worth checking from another account to confirm whether they're visible.
 
 ## Usage
 
-1. Run `CspDiscordRpcGd.exe`  
+1. Run `CspDiscordRpcGd`.
+
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/ProgramGui.png">
 
-2. (Optional, but recommended) Choose a CSP work to show more detailed information in your Discord Rich Presence  
+2. (Optional, but recommended) Choose a CSP work to show more detailed information in your Discord Rich Presence.
+
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/ChooseWork.png">
 
-3. Choose your preferred language for the Rich Presence text  
+3. Choose your preferred language for the Rich Presence text.
+
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_English.png">
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_Japanese.png">
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_TraditionalChinese.png">
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/Presence_SimplifiedChinese.png">
 
-4. Turn on Discord Rich Presence  
+4. Turn on Discord Rich Presence.
+
    <img src="https://github.com/kakuun333/CspDiscordRpcGd/raw/assets/Images/TurnOnRichPresence.png">
 
 ## Credits
