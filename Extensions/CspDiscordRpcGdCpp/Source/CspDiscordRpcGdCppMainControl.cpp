@@ -79,6 +79,11 @@ enum class EWindowControlButtonStyle : int32_t
     Close,
 };
 
+[[nodiscard]] bool IsMacOs()
+{
+    const godot::OS* OperatingSystem{ godot::OS::get_singleton() };
+    return OperatingSystem != nullptr && OperatingSystem->get_name() == godot::String("macOS");
+}
 
 [[nodiscard]] godot::Vector2i RoundVector2ToVector2i(const godot::Vector2& Value)
 {
@@ -845,6 +850,13 @@ void CspDiscordRpcGdCppMainControl::_ready()
                              .bind(CloseButton, static_cast<int32_t>(EWindowControlButtonStyle::Close)));
     CloseButton->connect("mouse_exited", callable_mp(this, &CspDiscordRpcGdCppMainControl::OnWindowControlButtonMouseExited).bind(CloseButton));
     TitleBarContainer->add_child(CloseButton);
+
+    if (IsMacOs())
+    {
+        TitleBarContainer->move_child(CloseButton, 0);
+        TitleBarContainer->move_child(MinimizeButton, 1);
+        TitleBarContainer->move_child(MaximizeButton, 2);
+    }
 
     godot::PanelContainer* ContentPanel = memnew(godot::PanelContainer);
     ContentPanel->set_name("ContentPanel");
