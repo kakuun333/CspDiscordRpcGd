@@ -71,18 +71,26 @@ function(target_godot_cpp target)
     target_compile_definitions(${target} PUBLIC
             $<$<CONFIG:Debug>:
             DEBUG_ENABLED
-            DEBUG_METHODS_ENABLED
+            HOT_RELOAD_ENABLED
             TOOLS_ENABLED
             >
             $<$<CONFIG:RelWithDebInfo>:
             DEBUG_ENABLED
-            DEBUG_METHODS_ENABLED
+            HOT_RELOAD_ENABLED
             TOOLS_ENABLED
             >
             $<$<CXX_COMPILER_ID:MSVC>:
             TYPED_METHOD_BIND
             >
     )
+
+    if(GODOT_PLATFORM STREQUAL "macos")
+        target_compile_definitions(${target} PUBLIC MACOS_ENABLED UNIX_ENABLED)
+    elseif(GODOT_PLATFORM STREQUAL "linux")
+        target_compile_definitions(${target} PUBLIC LINUXBSD_ENABLED UNIX_ENABLED)
+    elseif(GODOT_PLATFORM STREQUAL "windows")
+        target_compile_definitions(${target} PUBLIC WINDOWS_ENABLED)
+    endif()
 endfunction()
 
 # Apply the project's platform/build/architecture binary naming convention and place outputs in one folder.

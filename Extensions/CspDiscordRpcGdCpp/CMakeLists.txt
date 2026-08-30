@@ -1,5 +1,25 @@
 cmake_minimum_required(VERSION 3.25)
 
+# Build a Universal 2 library by default so the same GDExtension can be loaded
+# by both Intel and Apple Silicon Macs.  macOS 10.15 is the oldest deployment
+# target supported by the C++ standard library features used by Glaze; Apple
+# Silicon itself requires macOS 11.0 or newer.
+# Both values remain normal CMake cache variables and can be overridden with
+# -DCMAKE_OSX_ARCHITECTURES=... and -DCMAKE_OSX_DEPLOYMENT_TARGET=....
+if(APPLE)
+    if(NOT DEFINED CMAKE_OSX_ARCHITECTURES OR CMAKE_OSX_ARCHITECTURES STREQUAL "")
+        set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "macOS target architectures")
+    endif()
+
+    if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET OR CMAKE_OSX_DEPLOYMENT_TARGET STREQUAL "")
+        if(DEFINED ENV{MACOSX_DEPLOYMENT_TARGET} AND NOT "$ENV{MACOSX_DEPLOYMENT_TARGET}" STREQUAL "")
+            set(CMAKE_OSX_DEPLOYMENT_TARGET "$ENV{MACOSX_DEPLOYMENT_TARGET}" CACHE STRING "Minimum macOS version")
+        else()
+            set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS version")
+        endif()
+    endif()
+endif()
+
 project(CspDiscordRpcGdCpp LANGUAGES CXX)
 
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
@@ -112,20 +132,24 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         glaze::glaze
 )
 
+if(APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            MACOSX_RPATH ON
+            BUILD_RPATH "@loader_path"
+            INSTALL_RPATH "@loader_path"
+            INSTALL_NAME_DIR "@rpath"
+    )
+endif()
+
 if(GODOT_PROJECT_BIN_DIR)
     cmake_path(CONVERT "${GODOT_PROJECT_BIN_DIR}" TO_CMAKE_PATH_LIST GODOT_PROJECT_BIN_DIR_CMAKE)
-    set(COPY_BINARY_DLLS_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/CopyBinaryDlls.cmake")
-    file(WRITE "${COPY_BINARY_DLLS_SCRIPT}"
-            "file(GLOB BinaryDlls LIST_DIRECTORIES false \"${CMAKE_CURRENT_SOURCE_DIR}/Binary/*.dll\")\n"
-            "if(BinaryDlls)\n"
-            "    file(COPY \${BinaryDlls} DESTINATION \"${GODOT_PROJECT_BIN_DIR_CMAKE}\")\n"
-            "endif()\n"
-    )
 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "${GODOT_PROJECT_BIN_DIR}"
-            COMMAND ${CMAKE_COMMAND} -P "${COPY_BINARY_DLLS_SCRIPT}"
-            COMMENT "Copying Binary/*.dll to ${GODOT_PROJECT_BIN_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:${PROJECT_NAME}>"
+                    "${GODOT_PROJECT_BIN_DIR_CMAKE}/$<TARGET_FILE_NAME:${PROJECT_NAME}>"
+            COMMENT "Deploying $<TARGET_FILE_NAME:${PROJECT_NAME}> to ${GODOT_PROJECT_BIN_DIR}"
     )
 else()
     message(WARNING "GODOT_PROJECT_BIN_DIR is not defined. Please set it as a CMake Cache Variable, otherwise automatic deployment of dynamic libraries will be skipped.")

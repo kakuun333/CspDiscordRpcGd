@@ -16,6 +16,10 @@ export_credentials.cfg
 ~*.dll
 ~*.pdb
 
+# macOS Binary Files
+*.dylib
+*.DS_Store
+
 # Linux Binary Files
 *.so
 

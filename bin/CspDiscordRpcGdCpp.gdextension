@@ -5,8 +5,8 @@ compatibility_minimum = "4.1"
 
 [libraries]
 
-; macos.debug = "res://bin/libgdexample.macos.debug.framework"
-; macos.release = "res://bin/libgdexample.macos.release.framework"
+macos.debug = "res://bin/CspDiscordRpcGdCpp.macos.debug.universal.dylib"
+macos.release = "res://bin/CspDiscordRpcGdCpp.macos.release.universal.dylib"
 windows.debug.x86_64 = "res://bin/CspDiscordRpcGdCpp.windows.debug.x86_64.dll"
 windows.release.x86_64 = "res://bin/CspDiscordRpcGdCpp.windows.release.x86_64.dll"
 linux.debug.x86_64 = "res://bin/CspDiscordRpcGdCpp.linux.debug.x86_64.so"

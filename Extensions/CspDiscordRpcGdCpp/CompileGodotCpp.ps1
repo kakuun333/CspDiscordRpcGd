@@ -6,7 +6,12 @@ param(
 
     [switch]$SkipClean,
 
-    [switch]$DebugSymbolsForRelease
+    [switch]$DebugSymbolsForRelease,
+
+    [ValidateSet("universal", "x86_64", "arm64")]
+    [string]$MacOSArchitecture = "universal",
+
+    [string]$MacOSDeploymentTarget = "10.15"
 )
 
 $ErrorActionPreference = "Stop"
@@ -59,7 +64,11 @@ function Invoke-GodotCppBuild {
         [bool]$DebugSymbols,
 
         [Parameter(Mandatory = $true)]
-        [int]$Jobs
+        [int]$Jobs,
+
+        [string]$MacOSArchitecture,
+
+        [string]$MacOSDeploymentTarget
     )
 
     $SconsArgs = @(
@@ -71,8 +80,16 @@ function Invoke-GodotCppBuild {
         "-j$Jobs"
     )
 
+    if ($Platform -eq "macos") {
+        $SconsArgs += "arch=$MacOSArchitecture"
+        $SconsArgs += "macos_deployment_target=$MacOSDeploymentTarget"
+    }
+
     Write-Host ""
     Write-Host "Starting godot-cpp build: platform=$Platform, target=$Target"
+    if ($Platform -eq "macos") {
+        Write-Host "macOS architecture=$MacOSArchitecture, deployment target=$MacOSDeploymentTarget"
+    }
     & scons @SconsArgs
 
     if ($LASTEXITCODE -ne 0) {
@@ -107,8 +124,8 @@ try {
         }
     }
 
-    Invoke-GodotCppBuild -Platform $Platform -Target "template_debug" -DevBuild $true -DebugSymbols $true -Jobs $Jobs
-    Invoke-GodotCppBuild -Platform $Platform -Target "template_release" -DevBuild $false -DebugSymbols $DebugSymbolsForRelease.IsPresent -Jobs $Jobs
+    Invoke-GodotCppBuild -Platform $Platform -Target "template_debug" -DevBuild $true -DebugSymbols $true -Jobs $Jobs -MacOSArchitecture $MacOSArchitecture -MacOSDeploymentTarget $MacOSDeploymentTarget
+    Invoke-GodotCppBuild -Platform $Platform -Target "template_release" -DevBuild $false -DebugSymbols $DebugSymbolsForRelease.IsPresent -Jobs $Jobs -MacOSArchitecture $MacOSArchitecture -MacOSDeploymentTarget $MacOSDeploymentTarget
 
     Write-Host ""
     Write-Host "========================================"
