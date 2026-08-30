@@ -13,7 +13,13 @@
 #include "godot_cpp/classes/button.hpp"
 #include "godot_cpp/classes/check_button.hpp"
 #include "godot_cpp/classes/color_rect.hpp"
+#if defined(MACOS_ENABLED)
+#include "godot_cpp/classes/dir_access.hpp"
+#endif
 #include "godot_cpp/classes/display_server.hpp"
+#if defined(MACOS_ENABLED)
+#include "godot_cpp/classes/file_access.hpp"
+#endif
 #include "godot_cpp/classes/grid_container.hpp"
 #include "godot_cpp/classes/h_box_container.hpp"
 #include "godot_cpp/classes/image.hpp"
@@ -64,6 +70,10 @@ namespace
 constexpr float ResizeBorderThickness = 3.0f;
 constexpr float ResizeCornerExtent = 12.0f;
 constexpr const char* SettingsFileName = "Settings.json";
+#if defined(MACOS_ENABLED)
+constexpr const char* MacOsSettingsDirectoryName = "CspDiscordRpcGd";
+constexpr const char* MacOsSettingsFilePath = "user://Settings.json";
+#endif
 constexpr int32_t CspIconMaxWidth = 48;
 constexpr int32_t CspIconTextureSize = CspIconMaxWidth * 2;
 
@@ -411,6 +421,56 @@ void SetWindowVisibility(godot::Window* Window, const bool bVisible)
 [[nodiscard]] std::filesystem::path GetPropertySettingsFilePath()
 {
     return std::filesystem::current_path() / SettingsFileName;
+}
+
+[[nodiscard]] godot::String ReadPropertySettingsJson()
+{
+#if defined(MACOS_ENABLED)
+    if (IsMacOs())
+    {
+        const godot::Ref<godot::FileAccess> PropertySettingsFile =
+            godot::FileAccess::open(MacOsSettingsFilePath, godot::FileAccess::READ);
+        return PropertySettingsFile.is_valid() ? PropertySettingsFile->get_as_text() : godot::String();
+    }
+#endif
+
+    std::ifstream PropertySettingsStream(GetPropertySettingsFilePath(), std::ios::binary);
+    if (!PropertySettingsStream.is_open())
+    {
+        return {};
+    }
+
+    const std::string PropertySettingsJson((std::istreambuf_iterator<char>(PropertySettingsStream)), std::istreambuf_iterator<char>());
+    return godot::String(PropertySettingsJson.c_str());
+}
+
+void WritePropertySettingsJson(const godot::String& PropertySettingsJson)
+{
+#if defined(MACOS_ENABLED)
+    if (IsMacOs())
+    {
+        const godot::Ref<godot::DirAccess> UserDirectory = godot::DirAccess::open("user://");
+        if (UserDirectory.is_null())
+        {
+            return;
+        }
+
+        const godot::Ref<godot::FileAccess> PropertySettingsFile =
+            godot::FileAccess::open(MacOsSettingsFilePath, godot::FileAccess::WRITE);
+        if (PropertySettingsFile.is_valid())
+        {
+            PropertySettingsFile->store_string(PropertySettingsJson);
+        }
+
+        return;
+    }
+#endif
+
+    std::ofstream PropertySettingsStream(GetPropertySettingsFilePath(), std::ios::binary | std::ios::trunc);
+    if (PropertySettingsStream.is_open())
+    {
+        PropertySettingsStream << PropertySettingsJson.utf8().get_data();
+    }
 }
 
 [[nodiscard]] bool MatchesXmlPath(const std::vector<godot::String>& CurrentPath, std::initializer_list<const char*> ExpectedPath)
@@ -1234,25 +1294,13 @@ godot::String CspDiscordRpcGdCppMainControl::GetCspIconLargeImageKey() const
 
 void CspDiscordRpcGdCppMainControl::LoadPropertySettings()
 {
-    const std::filesystem::path PropertySettingsPath = GetPropertySettingsFilePath();
-    if (!std::filesystem::exists(PropertySettingsPath))
+    const godot::String PropertySettingsJson = ReadPropertySettingsJson();
+    if (PropertySettingsJson.is_empty())
     {
         return;
     }
 
-    std::ifstream PropertySettingsStream(PropertySettingsPath, std::ios::binary);
-    if (!PropertySettingsStream.is_open())
-    {
-        return;
-    }
-
-    const std::string PropertySettingsJson((std::istreambuf_iterator<char>(PropertySettingsStream)), std::istreambuf_iterator<char>());
-    if (PropertySettingsJson.empty())
-    {
-        return;
-    }
-
-    const godot::Variant ParsedJson = godot::JSON::parse_string(godot::String(PropertySettingsJson.c_str()));
+    const godot::Variant ParsedJson = godot::JSON::parse_string(PropertySettingsJson);
     if (ParsedJson.get_type() != godot::Variant::DICTIONARY)
     {
         return;
@@ -1366,14 +1414,8 @@ void CspDiscordRpcGdCppMainControl::SavePropertySettings() const
     PropertySettings["Button2Label"] = Button2LabelLineEdit != nullptr ? Button2LabelLineEdit->get_text() : godot::String();
     PropertySettings["Button2Url"] = Button2UrlLineEdit != nullptr ? Button2UrlLineEdit->get_text() : godot::String();
 
-    std::ofstream PropertySettingsStream(GetPropertySettingsFilePath(), std::ios::binary | std::ios::trunc);
-    if (!PropertySettingsStream.is_open())
-    {
-        return;
-    }
-
     const godot::String PropertySettingsJson = godot::JSON::stringify(PropertySettings, "  ");
-    PropertySettingsStream << PropertySettingsJson.utf8().get_data();
+    WritePropertySettingsJson(PropertySettingsJson);
 }
 
 void CspDiscordRpcGdCppMainControl::ApplySelectedCspWorkPath(const godot::String& WorkPath, const godot::String& FallbackWorkName)
